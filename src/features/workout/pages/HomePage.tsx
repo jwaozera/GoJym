@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../../../store/authStore'
+// import { useAuthStore } from '../../../store/authStore'
 import { Card } from '../../../components/ui'
 import {
   Bell,
@@ -18,7 +18,7 @@ import {
 type HomeState = 'default' | 'in-progress' | 'rest-day'
 
 // mock: trocar por store real nas próximas etapas
-const MOCK_HOME_STATE: HomeState = 'default'
+const MOCK_HOME_STATE = 'default' as HomeState
 
 const WEEKLY_DATA = [
   { day: 'Seg', sets: 18, active: true },
@@ -33,9 +33,6 @@ const WEEKLY_DATA = [
 const MAX_SETS = Math.max(...WEEKLY_DATA.map((d) => d.sets), 1)
 
 export const HomePage = () => {
-  const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-
   const dateString = useMemo(() => {
     const now = new Date()
     const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
