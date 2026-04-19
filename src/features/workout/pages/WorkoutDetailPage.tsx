@@ -24,7 +24,7 @@ export const WorkoutDetailPage = () => {
 
   // stats calculados
   const exerciseCount = session.exercises.length
-  const totalSets = session.exercises.reduce((acc, we) => acc + we.sets.length, 0)
+  //const totalSets = session.exercises.reduce((acc, we) => acc + we.sets.length, 0)
   const estimatedMin = session.durationSeconds
     ? Math.round(session.durationSeconds / 60)
     : 55

@@ -18,11 +18,11 @@ export const SetInputRow = ({
   weight,
   reps,
   completed,
-  lastWeight,
-  lastReps,
+  // lastWeight,
+  // lastReps,
   isActive,
-  onWeightChange,
-  onRepsChange,
+  // onWeightChange,
+  // onRepsChange,
   onToggleComplete,
 }: SetInputRowProps) => {
   // completed state
