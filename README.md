@@ -1,1 +1,1 @@
-GoJym — controle de treinos de academi
+GoJym — controle de treinos de academia
