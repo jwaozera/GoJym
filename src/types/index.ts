@@ -25,6 +25,7 @@ export interface WorkoutExercise {
   id: string
   exercise: Exercise
   sets: Set[]
+  restSeconds?: number
 }
 
 export interface WorkoutSession {
