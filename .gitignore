@@ -36,3 +36,7 @@ temp/
 *.md
 !README.md
 !**/README.md
+*.docx.pdf
+*.txt
+*.py
+*.docx

@@ -1,16 +1,30 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { mockSessions } from '../../../mocks/data'
+import { useWorkoutStore } from '../../../store/workoutStore'
 import { WorkoutCard } from '../components/WorkoutCard'
 import { Plus, Dumbbell } from 'lucide-react'
 
 export const WorkoutListPage = () => {
   const navigate = useNavigate()
+  const { sessions, loading, fetchSessions } = useWorkoutStore()
+
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
 
   // separar sessão ativa das demais
-  const activeSessions = mockSessions.filter((s) => s.isActive)
-  const otherSessions = mockSessions.filter((s) => !s.isActive)
+  const activeSessions = sessions.filter((s) => s.isActive)
+  const otherSessions = sessions.filter((s) => !s.isActive)
 
-  const isEmpty = mockSessions.length === 0
+  const isEmpty = sessions.length === 0
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <span className="text-sm text-gj-text-secondary">Carregando treinos...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-full px-5 pt-14 pb-4">

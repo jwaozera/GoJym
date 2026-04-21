@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <Navigate to="/home" replace /> },
+      { index: true, element: <Navigate to="/login" replace /> },
       { path: 'home', element: <HomePage /> },
       { path: 'workouts', element: <WorkoutListPage /> },
       { path: 'workouts/:sessionId', element: <WorkoutDetailPage /> },

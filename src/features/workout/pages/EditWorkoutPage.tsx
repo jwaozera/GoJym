@@ -1,6 +1,6 @@
-import { useReducer, useState } from 'react'
+import { useReducer, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { mockSessions } from '../../../mocks/data'
+import { useWorkoutStore } from '../../../store/workoutStore'
 import type { Exercise } from '../../../types'
 import { Input, Button } from '../../../components/ui'
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal'
@@ -37,6 +37,7 @@ type FormAction =
   | { type: 'ADD_EXERCISE'; exercise: Exercise }
   | { type: 'REMOVE_EXERCISE'; id: string }
   | { type: 'UPDATE_EXERCISE'; id: string; field: 'sets' | 'reps' | 'rest'; value: string }
+  | { type: 'INIT'; state: FormState }
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
@@ -72,23 +73,37 @@ function formReducer(state: FormState, action: FormAction): FormState {
         ),
       }
 
+    case 'INIT':
+      return action.state
+
     default:
       return state
   }
+}
+
+const emptyState: FormState = {
+  name: '',
+  category: '',
+  objective: 'Hipertrofia',
+  duration: '',
+  exercises: [],
 }
 
 /* ----- componente ----- */
 export const EditWorkoutPage = () => {
   const { sessionId } = useParams()
   const navigate = useNavigate()
+  const { sessions, fetchSessions, updateSession, deleteSession, loading } = useWorkoutStore()
 
-  const session = mockSessions.find((s) => s.id === sessionId)
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
+
+  const session = sessions.find((s) => s.id === sessionId)
 
   // converter sessão para FormState
   const buildInitialState = (): FormState => {
-    if (!session) {
-      return { name: '', category: '', objective: 'Hipertrofia', duration: '', exercises: [] }
-    }
+    if (!session) return emptyState
 
     const categories = [...new Set(session.exercises.map((we) => we.exercise.category))]
 
@@ -122,6 +137,22 @@ export const EditWorkoutPage = () => {
     leaving: false,
   })
 
+  // Re-init form if session data arrives after initial render
+  useEffect(() => {
+    if (session) {
+      dispatch({ type: 'INIT', state: buildInitialState() })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id])
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <span className="text-sm text-gj-text-secondary">Carregando...</span>
+      </div>
+    )
+  }
+
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-full gap-3 px-5">
@@ -136,8 +167,24 @@ export const EditWorkoutPage = () => {
     )
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!state.name.trim()) return
+
+    await updateSession(session.id, {
+      name: state.name,
+      exercises: state.exercises.map((row) => ({
+        id: row.id,
+        exercise: row.exercise,
+        restSeconds: parseInt(row.rest.replace('s', '')) || 60,
+        sets: Array.from({ length: parseInt(row.sets) || 3 }, (_, i) => ({
+          id: crypto.randomUUID(),
+          setNumber: i + 1,
+          weight: null,
+          reps: null,
+          completed: false,
+        })),
+      })),
+    })
 
     setToast({ show: true, leaving: false })
     setTimeout(() => {
@@ -149,8 +196,8 @@ export const EditWorkoutPage = () => {
     }, 1800)
   }
 
-  const handleDelete = () => {
-    // em produção removeria do store — por agora volta para a lista
+  const handleDelete = async () => {
+    await deleteSession(session.id)
     navigate('/workouts')
   }
 

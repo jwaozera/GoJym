@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { X } from 'lucide-react'
 
 interface RestTimerProps {
@@ -10,15 +10,21 @@ interface RestTimerProps {
 export const RestTimer = ({ initialSeconds, onFinish, onSkip }: RestTimerProps) => {
   const [totalSeconds, setTotalSeconds] = useState(initialSeconds)
   const [remaining, setRemaining] = useState(initialSeconds)
+  const onFinishRef = useRef(onFinish)
+
+  // Manter ref atualizada sem recriar o effect
+  useEffect(() => {
+    onFinishRef.current = onFinish
+  }, [onFinish])
 
   useEffect(() => {
     if (remaining <= 0) {
-      onFinish()
+      onFinishRef.current()
       return
     }
     const id = setInterval(() => setRemaining((r) => r - 1), 1000)
     return () => clearInterval(id)
-  }, [remaining, onFinish])
+  }, [remaining])
 
   const adjustTime = useCallback((delta: number) => {
     setTotalSeconds((t) => Math.max(5, t + delta))

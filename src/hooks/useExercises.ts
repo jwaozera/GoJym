@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react'
 import type { Exercise } from '../types'
-import { mockExercises } from '../mocks/data'
+import { exerciseService } from '../services/exerciseService'
 
 export const useExercises = (search: string) => {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
-    const filtered = mockExercises.filter((e) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.muscleGroup.toLowerCase().includes(search.toLowerCase())
-    )
-    const t = setTimeout(() => { setExercises(filtered); setLoading(false) }, 300)
-    return () => clearTimeout(t)
+    exerciseService.search(search).then(results => {
+      if (!cancelled) {
+        setExercises(results)
+        setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [search])
 
   return { exercises, loading }

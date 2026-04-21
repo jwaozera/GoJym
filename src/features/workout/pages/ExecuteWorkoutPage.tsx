@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { mockSessions } from '../../../mocks/data'
+import { useWorkoutStore } from '../../../store/workoutStore'
 import { useTimer } from '../../../hooks/useTimer'
 import { SetInputRow } from '../components/SetInputRow'
 import { RestTimer } from '../components/RestTimer'
@@ -45,7 +45,13 @@ export const ExecuteWorkoutPage = () => {
   const navigate = useNavigate()
   const timer = useTimer()
 
-  const session = mockSessions.find((s) => s.id === sessionId)
+  const { sessions, fetchSessions } = useWorkoutStore()
+
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
+
+  const session = sessions.find((s) => s.id === sessionId)
 
   /* ----- construir estado live ----- */
   const buildLiveExercises = useCallback((): LiveExercise[] => {
@@ -76,16 +82,28 @@ export const ExecuteWorkoutPage = () => {
 
   const [exercises, setExercises] = useState<LiveExercise[]>([])
   const [currentExIdx, setCurrentExIdx] = useState(0)
-  const [currentSetIdx, setCurrentSetIdx] = useState(0)
+  const [activeSetId, setActiveSetId] = useState<string | null>(null)
   const [showRestTimer, setShowRestTimer] = useState(false)
   const [view, setView] = useState<PageView>('execution')
+  const initRef = useRef(false)
+
+  /* Stable callbacks for RestTimer — must be before any early return */
+  const handleRestFinish = useCallback(() => setShowRestTimer(false), [])
+  const handleRestSkip = useCallback(() => setShowRestTimer(false), [])
 
   /* init */
   useEffect(() => {
-    setExercises(buildLiveExercises())
-    timer.start()
+    if (session && !initRef.current) {
+      const built = buildLiveExercises()
+      setExercises(built)
+      // Focar na primeira série não concluída
+      const firstSet = built[0]?.sets[0]
+      setActiveSetId(firstSet?.id ?? null)
+      timer.start()
+      initRef.current = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [session])
 
   if (!session || exercises.length === 0) {
     return (
@@ -106,7 +124,14 @@ export const ExecuteWorkoutPage = () => {
     0
   )
   const isLastExercise = currentExIdx === totalExercises - 1
-  const isLastSet = currentSetIdx === (currentEx?.sets.length ?? 1) - 1
+
+  // Derivar activeSet a partir de activeSetId
+  const activeSet = currentEx.sets.find(s => s.id === activeSetId)
+    ?? currentEx.sets.find(s => !s.completed)
+    ?? currentEx.sets[0]
+
+  const isLastSet = currentEx.sets.every(s => s.completed || s.id === activeSetId)
+    && currentEx.sets[currentEx.sets.length - 1].id === activeSetId
 
   /* ---- progress ratio (exercises) ---- */
   const exProgress = (currentExIdx + 1) / totalExercises
@@ -140,6 +165,8 @@ export const ExecuteWorkoutPage = () => {
   }
 
   const handleToggleComplete = (setId: string) => {
+    const targetSet = currentEx.sets.find(s => s.id === setId)
+
     setExercises((prev) =>
       prev.map((ex) =>
         ex.id === currentEx.id
@@ -152,28 +179,53 @@ export const ExecuteWorkoutPage = () => {
           : ex
       )
     )
+
+    // Se estava concluída e clicou para re-editar, tornar ativa
+    if (targetSet?.completed) {
+      setActiveSetId(setId)
+    }
   }
 
   const handleConfirmSet = () => {
-    // marcar set atual como completo
-    const set = currentEx.sets[currentSetIdx]
-    if (!set.completed) {
-      handleToggleComplete(set.id)
-    }
+    if (!activeSetId) return
 
-    // avança para próximo set ou próximo exercício
-    if (currentSetIdx < currentEx.sets.length - 1) {
-      setCurrentSetIdx(currentSetIdx + 1)
-      setShowRestTimer(true)
-    } else if (currentExIdx < totalExercises - 1) {
-      setCurrentExIdx(currentExIdx + 1)
-      setCurrentSetIdx(0)
-      setShowRestTimer(true)
-    } else {
-      // último exercício, última série → tela de finalização
-      timer.pause()
-      setView('finishing')
-    }
+    // Marcar série ativa como concluída e calcular próxima numa única passada
+    setExercises((prev) => {
+      const updated = prev.map((ex) => ({
+        ...ex,
+        sets: ex.sets.map((s) =>
+          s.id === activeSetId ? { ...s, completed: true } : s
+        ),
+      }))
+
+      // Achatar todas as séries em ordem para encontrar a próxima
+      const allSets = updated.flatMap((ex) =>
+        ex.sets.map((s) => ({ ...s, exerciseId: ex.id }))
+      )
+      const currentIdx = allSets.findIndex((s) => s.id === activeSetId)
+      const next = allSets.slice(currentIdx + 1).find((s) => !s.completed)
+
+      // Agendar side-effects fora do setState
+      queueMicrotask(() => {
+        if (next) {
+          // Atualizar exercício ativo se mudou
+          const parentExIdx = updated.findIndex((ex) =>
+            ex.sets.some((s) => s.id === next.id)
+          )
+          if (parentExIdx !== -1 && parentExIdx !== currentExIdx) {
+            setCurrentExIdx(parentExIdx)
+          }
+          setActiveSetId(next.id)
+          setShowRestTimer(true)
+        } else {
+          // Todas as séries concluídas
+          timer.pause()
+          setView('finishing')
+        }
+      })
+
+      return updated
+    })
   }
 
   const handleFinishWorkout = () => {
@@ -190,17 +242,24 @@ export const ExecuteWorkoutPage = () => {
 
   const handlePrevExercise = () => {
     if (currentExIdx > 0) {
-      setCurrentExIdx(currentExIdx - 1)
-      setCurrentSetIdx(0)
+      const prevIdx = currentExIdx - 1
+      setCurrentExIdx(prevIdx)
+      // Focar na primeira série não completa do exercício anterior
+      const firstIncomplete = exercises[prevIdx].sets.find(s => !s.completed)
+      setActiveSetId(firstIncomplete?.id ?? exercises[prevIdx].sets[0]?.id ?? null)
     }
   }
 
   const handleNextExercise = () => {
     if (currentExIdx < totalExercises - 1) {
-      setCurrentExIdx(currentExIdx + 1)
-      setCurrentSetIdx(0)
+      const nextIdx = currentExIdx + 1
+      setCurrentExIdx(nextIdx)
+      // Focar na primeira série não completa do próximo exercício
+      const firstIncomplete = exercises[nextIdx].sets.find(s => !s.completed)
+      setActiveSetId(firstIncomplete?.id ?? exercises[nextIdx].sets[0]?.id ?? null)
     }
   }
+
 
   /* ====== SUMMARY VIEW ====== */
   if (view === 'summary') {
@@ -464,7 +523,7 @@ export const ExecuteWorkoutPage = () => {
           )}
         </div>
 
-        {/* input fields: Carga + Repetições */}
+        {/* input fields: Carga + Repetições — usando activeSet */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gj-text-secondary">Carga</label>
@@ -472,12 +531,12 @@ export const ExecuteWorkoutPage = () => {
               <input
                 type="number"
                 inputMode="numeric"
-                value={currentEx.sets[currentSetIdx]?.weight ?? ''}
+                value={activeSet?.weight ?? ''}
                 onChange={(e) =>
-                  handleWeightChange(currentEx.sets[currentSetIdx].id, e.target.value)
+                  handleWeightChange(activeSet?.id ?? '', e.target.value)
                 }
                 placeholder={
-                  currentEx.sets[currentSetIdx]?.lastWeight?.toString() ?? '0'
+                  activeSet?.lastWeight?.toString() ?? '0'
                 }
                 className="w-full text-center text-3xl font-bold text-white bg-transparent outline-none placeholder:text-gj-text-secondary/40 tabular-nums"
               />
@@ -490,12 +549,12 @@ export const ExecuteWorkoutPage = () => {
               <input
                 type="number"
                 inputMode="numeric"
-                value={currentEx.sets[currentSetIdx]?.reps ?? ''}
+                value={activeSet?.reps ?? ''}
                 onChange={(e) =>
-                  handleRepsChange(currentEx.sets[currentSetIdx].id, e.target.value)
+                  handleRepsChange(activeSet?.id ?? '', e.target.value)
                 }
                 placeholder={
-                  currentEx.sets[currentSetIdx]?.lastReps?.toString() ?? '0'
+                  activeSet?.lastReps?.toString() ?? '0'
                 }
                 className="w-full text-center text-3xl font-bold text-white bg-transparent outline-none placeholder:text-gj-text-secondary/40 tabular-nums"
               />
@@ -513,7 +572,7 @@ export const ExecuteWorkoutPage = () => {
             </span>
           </div>
           <div className="flex flex-col gap-2">
-            {currentEx.sets.map((set, idx) => (
+            {currentEx.sets.map((set) => (
               <SetInputRow
                 key={set.id}
                 setNumber={set.setNumber}
@@ -522,7 +581,7 @@ export const ExecuteWorkoutPage = () => {
                 completed={set.completed}
                 lastWeight={set.lastWeight}
                 lastReps={set.lastReps}
-                isActive={idx === currentSetIdx && !set.completed}
+                isActive={set.id === activeSetId && !set.completed}
                 onWeightChange={(v) => handleWeightChange(set.id, v)}
                 onRepsChange={(v) => handleRepsChange(set.id, v)}
                 onToggleComplete={() => handleToggleComplete(set.id)}
@@ -583,8 +642,8 @@ export const ExecuteWorkoutPage = () => {
       {showRestTimer && (
         <RestTimer
           initialSeconds={currentEx.restSeconds}
-          onFinish={() => setShowRestTimer(false)}
-          onSkip={() => setShowRestTimer(false)}
+          onFinish={handleRestFinish}
+          onSkip={handleRestSkip}
         />
       )}
     </div>

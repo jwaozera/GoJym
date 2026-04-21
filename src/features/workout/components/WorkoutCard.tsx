@@ -12,7 +12,7 @@ export const WorkoutCard = ({ session, onPress }: WorkoutCardProps) => {
     ? `${Math.round(session.durationSeconds / 60)} min`
     : null
 
-  const dateStr = session.createdAt.toLocaleDateString('pt-BR', {
+  const dateStr = new Date(session.createdAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
   })

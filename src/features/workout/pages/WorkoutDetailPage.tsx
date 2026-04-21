@@ -1,12 +1,26 @@
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { mockSessions } from '../../../mocks/data'
+import { useWorkoutStore } from '../../../store/workoutStore'
 import { ArrowLeft, Clock, Pencil, Play, Timer } from 'lucide-react'
 
 export const WorkoutDetailPage = () => {
   const { sessionId } = useParams()
   const navigate = useNavigate()
+  const { sessions, fetchSessions, loading } = useWorkoutStore()
 
-  const session = mockSessions.find((s) => s.id === sessionId)
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
+
+  const session = sessions.find((s) => s.id === sessionId)
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <span className="text-sm text-gj-text-secondary">Carregando...</span>
+      </div>
+    )
+  }
 
   if (!session) {
     return (

@@ -1,6 +1,7 @@
 import { useReducer, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Exercise } from '../../../types'
+import { useWorkoutStore } from '../../../store/workoutStore'
 import { Input, Button } from '../../../components/ui'
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal'
 import {
@@ -88,7 +89,9 @@ const initialState: FormState = {
 export const CreateWorkoutPage = () => {
   const navigate = useNavigate()
   const [state, dispatch] = useReducer(formReducer, initialState)
+  const createSession = useWorkoutStore(s => s.createSession)
   const [showSearch, setShowSearch] = useState(false)
+  const [starting, setStarting] = useState(false)
   const [toast, setToast] = useState<{ show: boolean; leaving: boolean }>({
     show: false,
     leaving: false,
@@ -96,6 +99,35 @@ export const CreateWorkoutPage = () => {
 
   const handleAddExercise = (exercise: Exercise) => {
     dispatch({ type: 'ADD_EXERCISE', exercise })
+  }
+
+  const handleStart = async () => {
+    if (!state.name.trim() || state.exercises.length === 0) return
+
+    try {
+      setStarting(true)
+      const session = await createSession({
+        name: state.name,
+        isActive: true,
+        exercises: state.exercises.map(row => ({
+          id: `we-${crypto.randomUUID()}`,
+          exercise: row.exercise,
+          restSeconds: parseInt(row.rest.replace('s', '')) || 90,
+          sets: Array.from({ length: parseInt(row.sets) || 3 }, (_, i) => ({
+            id: crypto.randomUUID(),
+            setNumber: i + 1,
+            weight: null,
+            reps: null,
+            completed: false,
+          })),
+        })),
+      })
+      navigate(`/workout/execute/${session.id}`)
+    } catch {
+      // Tratamento de erro futuro
+    } finally {
+      setStarting(false)
+    }
   }
 
   const handleSave = () => {
@@ -226,7 +258,9 @@ export const CreateWorkoutPage = () => {
           <Button
             variant="primary"
             fullWidth
+            loading={starting}
             disabled={!state.name.trim() || state.exercises.length === 0}
+            onClick={handleStart}
           >
             <Play size={16} fill="white" />
             Iniciar
