@@ -26,9 +26,6 @@ interface ExerciseRow {
 
 interface FormState {
   name: string
-  category: string
-  objective: string
-  duration: string
   exercises: ExerciseRow[]
 }
 
@@ -83,9 +80,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 const emptyState: FormState = {
   name: '',
-  category: '',
-  objective: 'Hipertrofia',
-  duration: '',
   exercises: [],
 }
 
@@ -105,15 +99,8 @@ export const EditWorkoutPage = () => {
   const buildInitialState = (): FormState => {
     if (!session) return emptyState
 
-    const categories = [...new Set(session.exercises.map((we) => we.exercise.category))]
-
     return {
       name: session.name,
-      category: categories.join(', '),
-      objective: 'Hipertrofia',
-      duration: session.durationSeconds
-        ? String(Math.round(session.durationSeconds / 60))
-        : '55',
       exercises: session.exercises.map((we) => {
         const reps = we.sets.map((s) => s.reps).filter((r): r is number => r !== null)
         const minR = reps.length ? Math.min(...reps) : 0
@@ -223,36 +210,6 @@ export const EditWorkoutPage = () => {
           value={state.name}
           onChange={(e) =>
             dispatch({ type: 'SET_FIELD', field: 'name', value: e.target.value })
-          }
-        />
-
-        {/* categoria + objetivo */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Categoria"
-            placeholder="Push"
-            value={state.category}
-            onChange={(e) =>
-              dispatch({ type: 'SET_FIELD', field: 'category', value: e.target.value })
-            }
-          />
-          <Input
-            label="Objetivo"
-            placeholder="Hipertrofia"
-            value={state.objective}
-            onChange={(e) =>
-              dispatch({ type: 'SET_FIELD', field: 'objective', value: e.target.value })
-            }
-          />
-        </div>
-
-        {/* duração */}
-        <Input
-          label="Duração estimada"
-          placeholder="55 min"
-          value={state.duration}
-          onChange={(e) =>
-            dispatch({ type: 'SET_FIELD', field: 'duration', value: e.target.value })
           }
         />
 

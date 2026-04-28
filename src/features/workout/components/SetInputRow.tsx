@@ -26,70 +26,84 @@ export const SetInputRow = ({
   onToggleComplete,
 }: SetInputRowProps) => {
   // série concluída
-  if (completed) {
-    return (
-      <button
-        onClick={onToggleComplete}
-        className="flex items-center justify-between h-12 px-3 rounded-gj-md bg-gj-success/8 border border-gj-success/20 cursor-pointer transition-colors hover:bg-gj-success/12 w-full"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-full bg-gj-success flex items-center justify-center">
-            <Check size={12} className="text-white" strokeWidth={3} />
-          </div>
-          <span className="text-sm font-medium text-gj-success">
-            {weight}kg × {reps} reps
-          </span>
-        </div>
-        <span className="text-[10px] text-gj-text-secondary">Toque para editar</span>
-      </button>
-    )
-  }
+  const borderClass = completed
+    ? 'border border-gj-success/20'
+    : isActive
+      ? 'border-2 border-gj-accent'
+      : 'border border-gj-border'
 
-  // série ativa (com inputs funcionais)
-  if (isActive) {
-    return (
-      <div className="flex items-center gap-2 h-12 px-3 rounded-gj-md bg-gj-bg border-2 border-gj-accent">
-        <div className="w-6 h-6 rounded-full bg-gj-accent flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-white">{setNumber}</span>
-        </div>
-        <span className="text-xs font-semibold text-white shrink-0 w-14">
-          Série {setNumber}
-        </span>
+  const bgClass = completed
+    ? 'bg-gj-success/8'
+    : 'bg-gj-bg'
+
+  const opacityClass = !completed && !isActive ? 'opacity-60' : ''
+
+  const badgeBg = completed
+    ? 'bg-gj-success'
+    : isActive
+      ? 'bg-gj-accent'
+      : 'bg-gj-surface-elevated'
+
+  const badgeText = completed || isActive
+    ? 'text-white'
+    : 'text-gj-text-secondary'
+
+  const inputTextClass = completed
+    ? 'text-gj-success'
+    : 'text-white'
+
+  return (
+    <div className={`flex items-center gap-2 min-h-[48px] px-3 py-2 rounded-gj-md ${borderClass} ${bgClass} ${opacityClass} transition-all duration-200`}>
+      {/* badge numérico — fixed size */}
+      <div className={`w-6 h-6 min-w-[24px] rounded-full ${badgeBg} flex items-center justify-center shrink-0`}>
+        <span className={`text-[10px] font-bold leading-none ${badgeText}`}>{setNumber}</span>
+      </div>
+
+      {/* peso input — flexible */}
+      <div className="flex items-center gap-0.5 flex-1 min-w-0">
         <input
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
           value={weight}
           onChange={e => onWeightChange(e.target.value)}
           placeholder={lastWeight?.toString() ?? '0'}
-          className="w-14 text-center bg-transparent text-sm font-bold text-white outline-none placeholder:text-gj-text-secondary/40"
+          className={`w-full min-w-0 text-center bg-transparent text-sm font-bold ${inputTextClass} outline-none placeholder:text-gj-text-secondary/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
         />
-        <span className="text-xs text-gj-text-secondary">kg</span>
-        <span className="text-gj-text-secondary mx-1">×</span>
+        <span className={`text-[10px] shrink-0 ${completed ? 'text-gj-success/60' : 'text-gj-text-secondary'}`}>kg</span>
+      </div>
+
+      {/* Separator */}
+      <span className={`text-sm shrink-0 ${completed ? 'text-gj-success/40' : 'text-gj-text-secondary/40'}`}>×</span>
+
+      {/* Reps input — flexible */}
+      <div className="flex items-center gap-0.5 flex-1 min-w-0">
         <input
           type="number"
           inputMode="numeric"
           value={reps}
           onChange={e => onRepsChange(e.target.value)}
           placeholder={lastReps?.toString() ?? '0'}
-          className="w-10 text-center bg-transparent text-sm font-bold text-white outline-none placeholder:text-gj-text-secondary/40"
+          className={`w-full min-w-0 text-center bg-transparent text-sm font-bold ${inputTextClass} outline-none placeholder:text-gj-text-secondary/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
         />
-        <span className="text-xs text-gj-text-secondary">reps</span>
+        <span className={`text-[10px] shrink-0 ${completed ? 'text-gj-success/60' : 'text-gj-text-secondary'}`}>reps</span>
       </div>
-    )
-  }
 
-  // série pendente (futura)
-  return (
-    <div className="flex items-center gap-2 h-12 px-3 rounded-gj-md bg-gj-surface border border-gj-border opacity-50">
-      <div className="w-6 h-6 rounded-full bg-gj-surface-elevated flex items-center justify-center shrink-0">
-        <span className="text-[10px] font-bold text-gj-text-secondary">{setNumber}</span>
-      </div>
-      <span className="text-xs font-medium text-gj-text-secondary">Série {setNumber}</span>
-      {lastWeight && (
-        <span className="ml-auto text-[10px] text-gj-text-secondary">
-          Último: {lastWeight}kg × {lastReps}
-        </span>
-      )}
+      {/* botão de checkmark — fixed size, touch-friendly */}
+      <button
+        onClick={onToggleComplete}
+        className={`w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer active:scale-90 ${
+          completed
+            ? 'bg-gj-success hover:bg-gj-success/80'
+            : 'bg-gj-surface-elevated border border-gj-border hover:border-gj-accent hover:bg-gj-accent/10'
+        }`}
+        aria-label={completed ? 'Desmarcar série' : 'Confirmar série'}
+      >
+        <Check
+          size={14}
+          className={completed ? 'text-white' : 'text-gj-text-secondary'}
+          strokeWidth={3}
+        />
+      </button>
     </div>
   )
 }

@@ -15,6 +15,7 @@ import {
   Target,
   Award,
   CheckCircle,
+  SkipForward,
 } from 'lucide-react'
 
 /* ====== tipos internos ====== */
@@ -84,6 +85,7 @@ export const ExecuteWorkoutPage = () => {
   const [currentExIdx, setCurrentExIdx] = useState(0)
   const [activeSetId, setActiveSetId] = useState<string | null>(null)
   const [showRestTimer, setShowRestTimer] = useState(false)
+  const [showEndSheet, setShowEndSheet] = useState(false)
   const [view, setView] = useState<PageView>('execution')
   const initRef = useRef(false)
 
@@ -167,48 +169,47 @@ export const ExecuteWorkoutPage = () => {
   const handleToggleComplete = (setId: string) => {
     const targetSet = currentEx.sets.find(s => s.id === setId)
 
-    setExercises((prev) =>
-      prev.map((ex) =>
+    // Se estava concluída e clicou para desmarcar
+    if (targetSet?.completed) {
+      setExercises((prev) =>
+        prev.map((ex) =>
+          ex.id === currentEx.id
+            ? {
+                ...ex,
+                sets: ex.sets.map((s) =>
+                  s.id === setId ? { ...s, completed: false } : s
+                ),
+              }
+            : ex
+        )
+      )
+      setActiveSetId(setId)
+      return
+    }
+
+    // Marcar como concluída e calcular próxima série
+    setExercises((prev) => {
+      const updated = prev.map((ex) =>
         ex.id === currentEx.id
           ? {
               ...ex,
               sets: ex.sets.map((s) =>
-                s.id === setId ? { ...s, completed: !s.completed } : s
+                s.id === setId ? { ...s, completed: true } : s
               ),
             }
           : ex
       )
-    )
-
-    // Se estava concluída e clicou para re-editar, tornar ativa
-    if (targetSet?.completed) {
-      setActiveSetId(setId)
-    }
-  }
-
-  const handleConfirmSet = () => {
-    if (!activeSetId) return
-
-    // Marcar série ativa como concluída e calcular próxima numa única passada
-    setExercises((prev) => {
-      const updated = prev.map((ex) => ({
-        ...ex,
-        sets: ex.sets.map((s) =>
-          s.id === activeSetId ? { ...s, completed: true } : s
-        ),
-      }))
 
       // Achatar todas as séries em ordem para encontrar a próxima
       const allSets = updated.flatMap((ex) =>
         ex.sets.map((s) => ({ ...s, exerciseId: ex.id }))
       )
-      const currentIdx = allSets.findIndex((s) => s.id === activeSetId)
+      const currentIdx = allSets.findIndex((s) => s.id === setId)
       const next = allSets.slice(currentIdx + 1).find((s) => !s.completed)
 
       // Agendar side-effects fora do setState
       queueMicrotask(() => {
         if (next) {
-          // Atualizar exercício ativo se mudou
           const parentExIdx = updated.findIndex((ex) =>
             ex.sets.some((s) => s.id === next.id)
           )
@@ -234,10 +235,31 @@ export const ExecuteWorkoutPage = () => {
   }
 
   const handleCancel = () => {
-    if (confirm('Tem certeza que deseja cancelar o treino? O progresso será perdido.')) {
-      timer.reset()
-      navigate('/workouts')
+    setShowEndSheet(true)
+  }
+
+  const handleSkipExercise = () => {
+    if (isLastExercise) {
+      setShowEndSheet(true)
+    } else {
+      handleNextExercise()
     }
+  }
+
+  const handleEndSheetContinue = () => {
+    setShowEndSheet(false)
+  }
+
+  const handleEndSheetFinish = () => {
+    setShowEndSheet(false)
+    timer.pause()
+    setView('summary')
+  }
+
+  const handleEndSheetDiscard = () => {
+    setShowEndSheet(false)
+    timer.reset()
+    navigate('/workouts')
   }
 
   const handlePrevExercise = () => {
@@ -523,45 +545,7 @@ export const ExecuteWorkoutPage = () => {
           )}
         </div>
 
-        {/* input fields: Carga + Repetições — usando activeSet */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-gj-text-secondary">Carga</label>
-            <div className="flex flex-col items-center gap-1 p-[18px] rounded-gj-lg bg-gj-bg border-2 border-gj-accent">
-              <input
-                type="number"
-                inputMode="numeric"
-                value={activeSet?.weight ?? ''}
-                onChange={(e) =>
-                  handleWeightChange(activeSet?.id ?? '', e.target.value)
-                }
-                placeholder={
-                  activeSet?.lastWeight?.toString() ?? '0'
-                }
-                className="w-full text-center text-3xl font-bold text-white bg-transparent outline-none placeholder:text-gj-text-secondary/40 tabular-nums"
-              />
-              <span className="text-xs text-gj-text-secondary">kg</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-gj-text-secondary">Repetições</label>
-            <div className="flex flex-col items-center gap-1 p-[18px] rounded-gj-lg bg-gj-bg border-2 border-gj-accent">
-              <input
-                type="number"
-                inputMode="numeric"
-                value={activeSet?.reps ?? ''}
-                onChange={(e) =>
-                  handleRepsChange(activeSet?.id ?? '', e.target.value)
-                }
-                placeholder={
-                  activeSet?.lastReps?.toString() ?? '0'
-                }
-                className="w-full text-center text-3xl font-bold text-white bg-transparent outline-none placeholder:text-gj-text-secondary/40 tabular-nums"
-              />
-              <span className="text-xs text-gj-text-secondary">reps</span>
-            </div>
-          </div>
-        </div>
+
 
         {/* series block */}
         <div className="rounded-gj-lg bg-gj-surface border border-gj-border p-4">
@@ -630,10 +614,11 @@ export const ExecuteWorkoutPage = () => {
           </button>
         ) : (
           <button
-            onClick={handleConfirmSet}
+            onClick={handleSkipExercise}
             className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20"
           >
-            Confirmar série
+            <SkipForward size={16} />
+            Pular exercício
           </button>
         )}
       </div>
@@ -645,6 +630,51 @@ export const ExecuteWorkoutPage = () => {
           onFinish={handleRestFinish}
           onSkip={handleRestSkip}
         />
+      )}
+
+      {/* ===== END WORKOUT SHEET ===== */}
+      {showEndSheet && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center">
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={handleEndSheetContinue} />
+
+          {/* Bottom Sheet */}
+          <div className="relative w-full max-w-[430px] bg-gj-surface border-t border-gj-border rounded-t-gj-lg animate-slideUp">
+            {/* Drag handle */}
+            <div className="flex items-center justify-center pt-3 pb-2">
+              <div className="w-10 h-1 rounded-full bg-gj-border" />
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col px-5 pb-8">
+              <h3 className="text-base font-semibold text-white mb-1">Sair da sessão?</h3>
+              <p className="text-xs text-gj-text-secondary mb-5">
+                Você completou {completedSets} de {totalSets} séries. Deseja realmente sair?
+              </p>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleEndSheetContinue}
+                  className="w-full h-[52px] rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center hover:brightness-110 transition-all cursor-pointer"
+                >
+                  Continuar treino
+                </button>
+                <button
+                  onClick={handleEndSheetFinish}
+                  className="w-full h-[52px] rounded-gj-lg bg-gj-surface-elevated border border-gj-border text-white text-sm font-semibold flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  Encerrar e ver resumo
+                </button>
+                <button
+                  onClick={handleEndSheetDiscard}
+                  className="w-full h-[52px] rounded-gj-lg text-red-400 text-sm font-semibold flex items-center justify-center hover:bg-red-400/10 transition-colors cursor-pointer"
+                >
+                  Descartar sessão
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -139,3 +139,32 @@ input[type="number"] {
   animation: toastSlideOut 0.3s ease-in forwards;
 }
 
+/* === Slide Down (top sheet) === */
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+/* === Slide Out variants === */
+@keyframes slideOutDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.animate-slideOutDown {
+  animation: slideOutDown 0.3s ease-in forwards;
+}
+
+@keyframes slideOutUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+
+.animate-slideOutUp {
+  animation: slideOutUp 0.3s ease-in forwards;
+}
+
