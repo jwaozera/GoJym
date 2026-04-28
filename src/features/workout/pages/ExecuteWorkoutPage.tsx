@@ -574,7 +574,7 @@ export const ExecuteWorkoutPage = () => {
           </div>
         </div>
 
-        {/* exercise navigation */}
+        {/* navegation exercicio */}
         <div className="flex items-center justify-between px-1">
           <button
             onClick={handlePrevExercise}
@@ -632,7 +632,7 @@ export const ExecuteWorkoutPage = () => {
         />
       )}
 
-      {/* ===== END WORKOUT SHEET ===== */}
+      {/* ===== SHEET FINALIZAR TREINO ===== */}
       {showEndSheet && (
         <div className="fixed inset-0 z-[60] flex items-end justify-center">
           {/* Overlay */}
