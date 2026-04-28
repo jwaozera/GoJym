@@ -4,7 +4,7 @@ import { Home, Dumbbell, BarChart3, User } from 'lucide-react'
 const navItems = [
   { label: 'Início', icon: Home, path: '/home' },
   { label: 'Treinos', icon: Dumbbell, path: '/workouts' },
-  { label: 'Análise', icon: BarChart3, path: '/analysis', disabled: true },
+  { label: 'Análise', icon: BarChart3, path: '/analysis' },
   { label: 'Perfil', icon: User, path: '/profile', disabled: true },
 ]
 

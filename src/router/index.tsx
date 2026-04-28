@@ -8,6 +8,7 @@ import { WorkoutDetailPage } from '../features/workout/pages/WorkoutDetailPage'
 import { EditWorkoutPage } from '../features/workout/pages/EditWorkoutPage'
 import { CreateWorkoutPage } from '../features/workout/pages/CreateWorkoutPage'
 import { ExecuteWorkoutPage } from '../features/workout/pages/ExecuteWorkoutPage'
+import { AnalysisPage } from '../features/workout/pages/AnalysisPage'
 import { AppLayout } from '../components/AppLayout'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'workouts/:sessionId/edit', element: <EditWorkoutPage /> },
       { path: 'workout/create', element: <CreateWorkoutPage /> },
       { path: 'workout/execute/:sessionId', element: <ExecuteWorkoutPage /> },
+      { path: 'analysis', element: <AnalysisPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/home" replace /> },
