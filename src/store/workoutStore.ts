@@ -3,9 +3,21 @@ import { persist } from 'zustand/middleware'
 import { workoutService } from '../services/workoutService'
 import type { WorkoutSession } from '../types'
 
+export interface ActiveExecution {
+  sessionId: string
+  sessionName: string
+  exerciseCount: number
+  completedSets: number
+  totalSets: number
+  currentExIdx: number
+  timerSeconds: number
+  startedAt: string // ISO date
+}
+
 interface WorkoutState {
   sessions: WorkoutSession[]
   loading: boolean
+  activeExecution: ActiveExecution | null
   fetchSessions: () => Promise<void>
   createSession: (
     data: Omit<WorkoutSession, 'id' | 'createdAt'>
@@ -20,6 +32,8 @@ interface WorkoutState {
     sessionId: string,
     result: Partial<WorkoutSession>
   ) => Promise<void>
+  setActiveExecution: (data: ActiveExecution | null) => void
+  clearActiveExecution: () => void
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -27,6 +41,7 @@ export const useWorkoutStore = create<WorkoutState>()(
     (set) => ({
       sessions: [],
       loading: false,
+      activeExecution: null,
 
       fetchSessions: async () => {
         set({ loading: true })
@@ -69,9 +84,17 @@ export const useWorkoutStore = create<WorkoutState>()(
           sessions: state.sessions.map(s =>
             s.id === sessionId ? { ...s, ...result, isActive: false } : s
           ),
+          activeExecution: null,
         }))
       },
+
+      setActiveExecution: (data) =>
+        set({ activeExecution: data }),
+
+      clearActiveExecution: () =>
+        set({ activeExecution: null }),
     }),
     { name: 'gojym-workouts' }
   )
 )
+

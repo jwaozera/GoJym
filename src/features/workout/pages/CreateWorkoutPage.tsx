@@ -26,9 +26,6 @@ interface ExerciseRow {
 
 interface FormState {
   name: string
-  category: string
-  objective: string
-  duration: string
   exercises: ExerciseRow[]
 }
 
@@ -79,9 +76,6 @@ function formReducer(state: FormState, action: FormAction): FormState {
 
 const initialState: FormState = {
   name: '',
-  category: 'Push',
-  objective: 'Hipertrofia',
-  duration: '55',
   exercises: [],
 }
 
@@ -166,36 +160,6 @@ export const CreateWorkoutPage = () => {
           value={state.name}
           onChange={(e) =>
             dispatch({ type: 'SET_FIELD', field: 'name', value: e.target.value })
-          }
-        />
-
-        {/* categoria + objetivo */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Categoria"
-            placeholder="Push"
-            value={state.category}
-            onChange={(e) =>
-              dispatch({ type: 'SET_FIELD', field: 'category', value: e.target.value })
-            }
-          />
-          <Input
-            label="Objetivo"
-            placeholder="Hipertrofia"
-            value={state.objective}
-            onChange={(e) =>
-              dispatch({ type: 'SET_FIELD', field: 'objective', value: e.target.value })
-            }
-          />
-        </div>
-
-        {/* duração */}
-        <Input
-          label="Duração estimada"
-          placeholder="55 min"
-          value={state.duration}
-          onChange={(e) =>
-            dispatch({ type: 'SET_FIELD', field: 'duration', value: e.target.value })
           }
         />
 
