@@ -1,12 +1,12 @@
 import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../../../store/workoutStore'
-import { ArrowLeft, Clock, Pencil, Play, Timer } from 'lucide-react'
+import { ArrowLeft, Pencil, Play, Timer } from 'lucide-react'
 
 export const WorkoutDetailPage = () => {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { sessions, fetchSessions, loading } = useWorkoutStore()
+  const { sessions, fetchSessions, loading, startActiveSession } = useWorkoutStore()
 
   useEffect(() => {
     fetchSessions()
@@ -36,17 +36,12 @@ export const WorkoutDetailPage = () => {
     )
   }
 
-  // stats calculados
   const exerciseCount = session.exercises.length
-  //const totalSets = session.exercises.reduce((acc, we) => acc + we.sets.length, 0)
-  const estimatedMin = session.durationSeconds
-    ? Math.round(session.durationSeconds / 60)
-    : 55
 
-  // categorias únicas dos exercícios
-  const categories = [
-    ...new Set(session.exercises.map((we) => we.exercise.category)),
-  ]
+  const handleStartSession = () => {
+    startActiveSession(session.id)
+    navigate(`/workout/execute/${session.id}`)
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -73,19 +68,9 @@ export const WorkoutDetailPage = () => {
           {session.name}
         </h1>
 
-        {/* subtítulo (categorias) */}
-        <p className="text-xs text-gj-text-secondary mb-2">
-          {categories.join(' · ')} · Hipertrofia
+        <p className="text-xs text-gj-text-secondary">
+          {exerciseCount} exercício{exerciseCount !== 1 ? 's' : ''}
         </p>
-
-        {/* stats */}
-        <div className="flex items-center gap-3 text-xs text-gj-text-secondary">
-          <span>{exerciseCount} exercícios</span>
-          <span className="flex items-center gap-1">
-            <Clock size={12} />
-            ~{estimatedMin} min
-          </span>
-        </div>
       </div>
 
       {/* ===== EXERCISE LIST ===== */}
@@ -126,14 +111,6 @@ export const WorkoutDetailPage = () => {
                     </span>
                   </div>
                 </div>
-
-                {/* último treino */}
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-gj-text-secondary">Último</span>
-                  <span className="text-xs font-medium text-gj-text-secondary/60">
-                    —
-                  </span>
-                </div>
               </div>
 
               {/* descanso */}
@@ -149,7 +126,7 @@ export const WorkoutDetailPage = () => {
       {/* ===== BOTTOM ACTION ===== */}
       <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
         <button
-          onClick={() => navigate(`/workout/execute/${session.id}`)}
+          onClick={handleStartSession}
           className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20"
         >
           <Play size={16} fill="white" />

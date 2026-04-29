@@ -254,7 +254,7 @@ export const EditWorkoutPage = () => {
         </div>
 
         {/* ===== EXCLUIR TREINO ===== */}
-        <div className="mt-4 pt-4 border-t border-gj-border">
+        <div className="mt-4">
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
@@ -295,7 +295,7 @@ export const EditWorkoutPage = () => {
       </div>
 
       {/* ===== BOTTOM BAR ===== */}
-      <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
+      <div className="px-5 pt-4 pb-8 border-t border-gj-border bg-gj-bg">
         <button
           onClick={handleSave}
           disabled={!state.name.trim()}

@@ -25,7 +25,6 @@ export const SetInputRow = ({
   onRepsChange,
   onToggleComplete,
 }: SetInputRowProps) => {
-  // série concluída
   const borderClass = completed
     ? 'border border-gj-success/20'
     : isActive
@@ -54,12 +53,10 @@ export const SetInputRow = ({
 
   return (
     <div className={`flex items-center gap-2 min-h-[48px] px-3 py-2 rounded-gj-md ${borderClass} ${bgClass} ${opacityClass} transition-all duration-200`}>
-      {/* badge numérico — fixed size */}
       <div className={`w-6 h-6 min-w-[24px] rounded-full ${badgeBg} flex items-center justify-center shrink-0`}>
         <span className={`text-[10px] font-bold leading-none ${badgeText}`}>{setNumber}</span>
       </div>
 
-      {/* peso input — flexible */}
       <div className="flex items-center gap-0.5 flex-1 min-w-0">
         <input
           type="number"
@@ -72,10 +69,8 @@ export const SetInputRow = ({
         <span className={`text-[10px] shrink-0 ${completed ? 'text-gj-success/60' : 'text-gj-text-secondary'}`}>kg</span>
       </div>
 
-      {/* Separator */}
       <span className={`text-sm shrink-0 ${completed ? 'text-gj-success/40' : 'text-gj-text-secondary/40'}`}>×</span>
 
-      {/* Reps input — flexible */}
       <div className="flex items-center gap-0.5 flex-1 min-w-0">
         <input
           type="number"
@@ -88,7 +83,6 @@ export const SetInputRow = ({
         <span className={`text-[10px] shrink-0 ${completed ? 'text-gj-success/60' : 'text-gj-text-secondary'}`}>reps</span>
       </div>
 
-      {/* botão de checkmark — fixed size, touch-friendly */}
       <button
         onClick={onToggleComplete}
         className={`w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer active:scale-90 ${
@@ -96,7 +90,7 @@ export const SetInputRow = ({
             ? 'bg-gj-success hover:bg-gj-success/80'
             : 'bg-gj-surface-elevated border border-gj-border hover:border-gj-accent hover:bg-gj-accent/10'
         }`}
-        aria-label={completed ? 'Desmarcar série' : 'Confirmar série'}
+        aria-label={completed ? 'Desmarcar serie' : 'Confirmar serie'}
       >
         <Check
           size={14}

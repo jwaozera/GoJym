@@ -50,18 +50,19 @@ export const RestTimer = ({ initialSeconds, onFinish, onSkip }: RestTimerProps) 
           <div className="w-10 h-1 rounded-full bg-gj-text-secondary/30" />
         </div>
 
-        {/* close */}
-        <button
-          onClick={onSkip}
-          className="absolute top-3 right-4 w-8 h-8 rounded-full bg-gj-surface-elevated flex items-center justify-center text-gj-text-secondary hover:text-white transition-colors cursor-pointer"
-        >
-          <X size={14} />
-        </button>
+        <div className="relative h-9 mb-3">
+          <h3 className="absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-base font-bold text-white">
+            Timer de descanso
+          </h3>
+          <button
+            onClick={onSkip}
+            className="absolute right-4 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-gj-surface-elevated text-gj-text-secondary transition-colors hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        </div>
 
         <div className="px-5 pb-6">
-          {/* title */}
-          <h3 className="text-base font-bold text-white text-center mb-1">Descanso</h3>
-          <p className="text-xs text-gj-text-secondary text-center mb-5">Descansando...</p>
 
           {/* big timer */}
           <div className="text-5xl font-bold text-gj-accent text-center mb-4 tabular-nums tracking-tight">

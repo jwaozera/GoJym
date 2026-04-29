@@ -12,10 +12,8 @@ import {
   Clock,
   Flame,
   Dumbbell,
-  Target,
   Award,
   CheckCircle,
-  SkipForward,
 } from 'lucide-react'
 
 /* ====== tipos internos ====== */
@@ -39,6 +37,7 @@ interface LiveExercise {
 }
 
 type PageView = 'execution' | 'finishing' | 'summary'
+type SummaryMode = 'completed' | 'partial'
 
 /* ====== componente principal ====== */
 export const ExecuteWorkoutPage = () => {
@@ -46,7 +45,7 @@ export const ExecuteWorkoutPage = () => {
   const navigate = useNavigate()
   const timer = useTimer()
 
-  const { sessions, fetchSessions } = useWorkoutStore()
+  const { sessions, fetchSessions, clearActiveExecution } = useWorkoutStore()
 
   useEffect(() => {
     fetchSessions()
@@ -87,6 +86,7 @@ export const ExecuteWorkoutPage = () => {
   const [showRestTimer, setShowRestTimer] = useState(false)
   const [showEndSheet, setShowEndSheet] = useState(false)
   const [view, setView] = useState<PageView>('execution')
+  const [summaryMode, setSummaryMode] = useState<SummaryMode>('completed')
   const initRef = useRef(false)
 
   /* Stable callbacks for RestTimer — must be before any early return */
@@ -131,9 +131,6 @@ export const ExecuteWorkoutPage = () => {
   const activeSet = currentEx.sets.find(s => s.id === activeSetId)
     ?? currentEx.sets.find(s => !s.completed)
     ?? currentEx.sets[0]
-
-  const isLastSet = currentEx.sets.every(s => s.completed || s.id === activeSetId)
-    && currentEx.sets[currentEx.sets.length - 1].id === activeSetId
 
   /* ---- progress ratio (exercises) ---- */
   const exProgress = (currentExIdx + 1) / totalExercises
@@ -220,8 +217,7 @@ export const ExecuteWorkoutPage = () => {
           setShowRestTimer(true)
         } else {
           // Todas as séries concluídas
-          timer.pause()
-          setView('finishing')
+          setActiveSetId(null)
         }
       })
 
@@ -231,19 +227,13 @@ export const ExecuteWorkoutPage = () => {
 
   const handleFinishWorkout = () => {
     timer.pause()
+    clearActiveExecution()
+    setSummaryMode('completed')
     setView('summary')
   }
 
   const handleCancel = () => {
     setShowEndSheet(true)
-  }
-
-  const handleSkipExercise = () => {
-    if (isLastExercise) {
-      setShowEndSheet(true)
-    } else {
-      handleNextExercise()
-    }
   }
 
   const handleEndSheetContinue = () => {
@@ -253,12 +243,15 @@ export const ExecuteWorkoutPage = () => {
   const handleEndSheetFinish = () => {
     setShowEndSheet(false)
     timer.pause()
+    clearActiveExecution()
+    setSummaryMode('partial')
     setView('summary')
   }
 
   const handleEndSheetDiscard = () => {
     setShowEndSheet(false)
     timer.reset()
+    clearActiveExecution()
     navigate('/workouts')
   }
 
@@ -311,6 +304,30 @@ export const ExecuteWorkoutPage = () => {
         (s) => (parseFloat(s.weight) || 0) === maxWeightSet.weight
       )
     )?.name ?? ''
+    const maxWeightSummary = maxWeightSet.weight > 0
+      ? `${maxWeightSet.weight}kg — ${maxExName}`
+      : '—'
+    const isPartialSummary = summaryMode === 'partial'
+    const summaryHighlights = isPartialSummary
+      ? []
+      : [
+          ...(maxWeightSet.weight > 0
+            ? [{
+                type: 'record' as const,
+                icon: <Trophy size={18} className="text-gj-accent shrink-0" />,
+                title: 'Novo recorde pessoal',
+                description: `${maxExName} — ${maxWeightSet.weight}kg × ${maxWeightSet.reps} reps`,
+                className: 'bg-gj-accent/5 border-gj-accent/15',
+              }]
+            : []),
+          {
+            type: 'streak' as const,
+            icon: <Award size={18} className="text-gj-success shrink-0" />,
+            title: 'Streak de 4 sessões',
+            description: 'Você está consistente. Continue assim!',
+            className: 'bg-gj-success/5 border-gj-success/15',
+          },
+        ]
 
     return (
       <div
@@ -324,13 +341,28 @@ export const ExecuteWorkoutPage = () => {
           <div
             className="w-16 h-16 rounded-gj-lg flex items-center justify-center mb-4"
             style={{
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              background: isPartialSummary
+                ? 'linear-gradient(135deg, #F59E0B, #D97706)'
+                : 'linear-gradient(135deg, #10B981, #059669)',
+              boxShadow: isPartialSummary
+                ? '0 4px 12px rgba(245, 158, 11, 0.2)'
+                : '0 4px 12px rgba(16, 185, 129, 0.2)',
             }}
           >
-            <CheckCircle size={32} className="text-white" />
+            {isPartialSummary ? (
+              <X size={32} className="text-white" />
+            ) : (
+              <CheckCircle size={32} className="text-white" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-white">Treino concluído</h1>
+          <h1 className="text-2xl font-bold text-white">
+            {isPartialSummary ? 'Sessão encerrada' : 'Treino concluído'}
+          </h1>
+          {isPartialSummary && (
+            <p className="mt-1 text-xs text-gj-text-secondary">
+              Resumo do que foi executado até agora
+            </p>
+          )}
         </div>
 
         {/* metrics row */}
@@ -365,7 +397,7 @@ export const ExecuteWorkoutPage = () => {
             { label: 'Treino', value: session.name },
             { label: 'Exercícios concluídos', value: `${completedExercises}/${totalExercises}` },
             { label: 'Séries concluídas', value: `${completedSets}/${totalSets}` },
-            { label: 'Maior carga', value: `${maxWeightSet.weight}kg — ${maxExName}` },
+            { label: 'Maior carga', value: maxWeightSummary },
             { label: 'Duração real', value: `${durationMin} min` },
           ].map((row, i, arr) => (
             <div
@@ -380,40 +412,29 @@ export const ExecuteWorkoutPage = () => {
           ))}
         </div>
 
-        {/* highlights */}
-        <div className="mx-5 mb-4 rounded-gj-lg bg-gj-surface border border-gj-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-gj-border">
-            <span className="text-sm font-semibold text-white">Destaques</span>
-          </div>
-          <div className="flex flex-col gap-2 p-3">
-            {/* PR */}
-            <div className="flex items-center gap-3 p-3 rounded-gj-md bg-gj-accent/5 border border-gj-accent/15">
-              <Trophy size={18} className="text-gj-accent shrink-0" />
-              <div>
-                <span className="text-xs font-semibold text-white block">Novo recorde pessoal</span>
-                <span className="text-[10px] text-gj-text-secondary">
-                  {maxExName} — {maxWeightSet.weight}kg × {maxWeightSet.reps} reps
-                </span>
-              </div>
+        {summaryHighlights.length > 0 && (
+          <div className="mx-5 mb-4 rounded-gj-lg bg-gj-surface border border-gj-border overflow-hidden">
+            <div className="px-4 py-3 border-b border-gj-border">
+              <span className="text-sm font-semibold text-white">Destaques</span>
             </div>
-            {/* weekly goal */}
-            <div className="flex items-center gap-3 p-3 rounded-gj-md bg-blue-500/5 border border-blue-500/15">
-              <Target size={18} className="text-blue-400 shrink-0" />
-              <div>
-                <span className="text-xs font-semibold text-white block">Meta semanal atingida</span>
-                <span className="text-[10px] text-gj-text-secondary">4/4 sessões concluídas esta semana</span>
-              </div>
-            </div>
-            {/* streak */}
-            <div className="flex items-center gap-3 p-3 rounded-gj-md bg-gj-success/5 border border-gj-success/15">
-              <Award size={18} className="text-gj-success shrink-0" />
-              <div>
-                <span className="text-xs font-semibold text-white block">Streak de 4 sessões</span>
-                <span className="text-[10px] text-gj-text-secondary">Você está consistente. Continue assim!</span>
-              </div>
+            <div className="flex flex-col gap-2 p-3">
+              {summaryHighlights.map((highlight) => (
+                <div
+                  key={highlight.type}
+                  className={`flex items-center gap-3 p-3 rounded-gj-md border ${highlight.className}`}
+                >
+                  {highlight.icon}
+                  <div>
+                    <span className="text-xs font-semibold text-white block">{highlight.title}</span>
+                    <span className="text-[10px] text-gj-text-secondary">
+                      {highlight.description}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
         {/* action buttons */}
         <div className="flex flex-col gap-3 px-5 pb-8 mt-auto">
@@ -424,7 +445,7 @@ export const ExecuteWorkoutPage = () => {
             Voltar ao início
           </button>
           <button
-            onClick={() => navigate('/workouts')}
+            onClick={() => navigate('/analysis')}
             className="w-full h-12 rounded-gj-lg bg-gj-surface-elevated border border-gj-border text-white text-sm font-semibold hover:bg-white/10 transition-colors cursor-pointer"
           >
             Ver análise
@@ -535,11 +556,11 @@ export const ExecuteWorkoutPage = () => {
           <p className="text-sm text-gj-text-secondary mb-3">{currentEx.setsTarget}</p>
 
           {/* última maior carga */}
-          {currentEx.lastMaxWeight && (
+          {(currentEx.lastMaxWeight || currentEx.lastMaxWeight === null) && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-gj-lg bg-gj-surface-elevated">
               <span className="text-[10px] text-gj-text-secondary">Última maior carga</span>
-              <span className="text-base font-bold text-gj-accent">
-                {currentEx.lastMaxWeight}kg
+              <span className={`text-base font-bold ${currentEx.lastMaxWeight ? 'text-gj-accent' : 'text-gj-text-secondary'}`}>
+                {currentEx.lastMaxWeight ? `${currentEx.lastMaxWeight}kg` : '—'}
               </span>
             </div>
           )}
@@ -574,55 +595,38 @@ export const ExecuteWorkoutPage = () => {
           </div>
         </div>
 
-        {/* navegation exercicio */}
-        <div className="flex items-center justify-between px-1">
+        <div className="flex gap-3 pt-1">
           <button
             onClick={handlePrevExercise}
             disabled={currentExIdx === 0}
-            className="flex items-center gap-1 text-xs text-gj-text-secondary disabled:opacity-30 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg border border-gj-border bg-gj-surface-elevated text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={16} />
             Anterior
           </button>
-          <span className="text-xs text-gj-text-secondary">
-            {currentEx.name}
-          </span>
-          <button
-            onClick={handleNextExercise}
-            disabled={isLastExercise}
-            className="flex items-center gap-1 text-xs text-gj-text-secondary disabled:opacity-30 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
-          >
-            Próximo
-            <ChevronRight size={14} />
-          </button>
+          {isLastExercise ? (
+            <button
+              onClick={handleFinishWorkout}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110"
+              style={{
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              }}
+            >
+              <CheckCircle size={16} />
+              Finalizar treino
+            </button>
+          ) : (
+            <button
+              onClick={handleNextExercise}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg bg-gj-accent text-sm font-semibold text-white shadow-lg shadow-gj-accent/20 transition-all hover:brightness-110"
+            >
+              Próximo
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       </div>
-
-      {/* ===== BOTTOM ACTION ===== */}
-      <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
-        {isLastExercise && isLastSet ? (
-          <button
-            onClick={handleFinishWorkout}
-            className="w-full h-12 rounded-gj-lg text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
-            }}
-          >
-            <CheckCircle size={16} />
-            Finalizar Treino
-          </button>
-        ) : (
-          <button
-            onClick={handleSkipExercise}
-            className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20"
-          >
-            <SkipForward size={16} />
-            Pular exercício
-          </button>
-        )}
-      </div>
-
       {/* ===== REST TIMER ===== */}
       {showRestTimer && (
         <RestTimer
