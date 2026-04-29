@@ -5,7 +5,7 @@ const navItems = [
   { label: 'Início', icon: Home, path: '/home' },
   { label: 'Treinos', icon: Dumbbell, path: '/workouts' },
   { label: 'Análise', icon: BarChart3, path: '/analysis' },
-  { label: 'Perfil', icon: User, path: '/profile', disabled: true },
+  { label: 'Perfil', icon: User, path: '/profile' },
 ]
 
 export const BottomNav = () => {
@@ -22,14 +22,11 @@ export const BottomNav = () => {
           return (
             <button
               key={item.path}
-              onClick={() => !item.disabled && navigate(item.path)}
-              disabled={item.disabled}
+              onClick={() => navigate(item.path)}
               className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all duration-200 ${
                 isActive
                   ? 'bg-gj-accent-soft'
-                  : item.disabled
-                    ? 'opacity-40 cursor-not-allowed'
-                    : 'hover:bg-white/5'
+                  : 'hover:bg-white/5'
               }`}
             >
               <Icon
