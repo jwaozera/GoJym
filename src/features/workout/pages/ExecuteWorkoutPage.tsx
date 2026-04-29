@@ -15,7 +15,6 @@ import {
   Target,
   Award,
   CheckCircle,
-  SkipForward,
 } from 'lucide-react'
 
 /* ====== tipos internos ====== */
@@ -132,9 +131,6 @@ export const ExecuteWorkoutPage = () => {
     ?? currentEx.sets.find(s => !s.completed)
     ?? currentEx.sets[0]
 
-  const isLastSet = currentEx.sets.every(s => s.completed || s.id === activeSetId)
-    && currentEx.sets[currentEx.sets.length - 1].id === activeSetId
-
   /* ---- progress ratio (exercises) ---- */
   const exProgress = (currentExIdx + 1) / totalExercises
 
@@ -220,8 +216,7 @@ export const ExecuteWorkoutPage = () => {
           setShowRestTimer(true)
         } else {
           // Todas as séries concluídas
-          timer.pause()
-          setView('finishing')
+          setActiveSetId(null)
         }
       })
 
@@ -236,14 +231,6 @@ export const ExecuteWorkoutPage = () => {
 
   const handleCancel = () => {
     setShowEndSheet(true)
-  }
-
-  const handleSkipExercise = () => {
-    if (isLastExercise) {
-      setShowEndSheet(true)
-    } else {
-      handleNextExercise()
-    }
   }
 
   const handleEndSheetContinue = () => {
@@ -535,11 +522,11 @@ export const ExecuteWorkoutPage = () => {
           <p className="text-sm text-gj-text-secondary mb-3">{currentEx.setsTarget}</p>
 
           {/* última maior carga */}
-          {currentEx.lastMaxWeight && (
+          {(currentEx.lastMaxWeight || currentEx.lastMaxWeight === null) && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-gj-lg bg-gj-surface-elevated">
               <span className="text-[10px] text-gj-text-secondary">Última maior carga</span>
-              <span className="text-base font-bold text-gj-accent">
-                {currentEx.lastMaxWeight}kg
+              <span className={`text-base font-bold ${currentEx.lastMaxWeight ? 'text-gj-accent' : 'text-gj-text-secondary'}`}>
+                {currentEx.lastMaxWeight ? `${currentEx.lastMaxWeight}kg` : '—'}
               </span>
             </div>
           )}
@@ -574,55 +561,38 @@ export const ExecuteWorkoutPage = () => {
           </div>
         </div>
 
-        {/* navegation exercicio */}
-        <div className="flex items-center justify-between px-1">
+        <div className="flex gap-3 pt-1">
           <button
             onClick={handlePrevExercise}
             disabled={currentExIdx === 0}
-            className="flex items-center gap-1 text-xs text-gj-text-secondary disabled:opacity-30 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg border border-gj-border bg-gj-surface-elevated text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={16} />
             Anterior
           </button>
-          <span className="text-xs text-gj-text-secondary">
-            {currentEx.name}
-          </span>
-          <button
-            onClick={handleNextExercise}
-            disabled={isLastExercise}
-            className="flex items-center gap-1 text-xs text-gj-text-secondary disabled:opacity-30 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
-          >
-            Próximo
-            <ChevronRight size={14} />
-          </button>
+          {isLastExercise ? (
+            <button
+              onClick={handleFinishWorkout}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg text-sm font-semibold text-white shadow-lg transition-all hover:brightness-110"
+              style={{
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              }}
+            >
+              <CheckCircle size={16} />
+              Finalizar treino
+            </button>
+          ) : (
+            <button
+              onClick={handleNextExercise}
+              className="flex h-12 flex-1 items-center justify-center gap-2 rounded-gj-lg bg-gj-accent text-sm font-semibold text-white shadow-lg shadow-gj-accent/20 transition-all hover:brightness-110"
+            >
+              Próximo
+              <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       </div>
-
-      {/* ===== BOTTOM ACTION ===== */}
-      <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
-        {isLastExercise && isLastSet ? (
-          <button
-            onClick={handleFinishWorkout}
-            className="w-full h-12 rounded-gj-lg text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
-            }}
-          >
-            <CheckCircle size={16} />
-            Finalizar Treino
-          </button>
-        ) : (
-          <button
-            onClick={handleSkipExercise}
-            className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20"
-          >
-            <SkipForward size={16} />
-            Pular exercício
-          </button>
-        )}
-      </div>
-
       {/* ===== REST TIMER ===== */}
       {showRestTimer && (
         <RestTimer
