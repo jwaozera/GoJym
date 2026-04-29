@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
+import { Info } from 'lucide-react'
+
 interface WeeklySeriesSheetProps {
   isOpen: boolean
   onClose: () => void
@@ -13,6 +16,28 @@ interface WeeklySeriesSheetProps {
 }
 
 export const WeeklySeriesSheet = ({ isOpen, onClose, data }: WeeklySeriesSheetProps) => {
+  const [showTooltip, setShowTooltip] = useState(false)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showTooltip) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!tooltipRef.current?.contains(event.target as Node)) {
+        setShowTooltip(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [showTooltip])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowTooltip(false)
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
 
   const rows = [
@@ -42,7 +67,33 @@ export const WeeklySeriesSheet = ({ isOpen, onClose, data }: WeeklySeriesSheetPr
         {/* Content */}
         <div className="flex flex-col px-5 pb-8">
           {/* Title */}
-          <h3 className="text-base font-semibold text-white mb-4">Séries Semanais</h3>
+          <div className="relative mb-4 flex items-center gap-2">
+            <h3 className="text-base font-semibold text-white">Séries Semanais</h3>
+            <div ref={tooltipRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTooltip((value) => !value)}
+                className="flex h-6 w-6 items-center justify-center rounded-full text-gj-text-secondary transition-colors hover:bg-white/5 hover:text-white"
+                aria-label="Mostrar explicação das comparações"
+                aria-expanded={showTooltip}
+              >
+                <Info size={14} />
+              </button>
+
+              {showTooltip && (
+                <div className="absolute left-1/2 top-8 z-[70] w-[224px] -translate-x-1/2 rounded-gj-md border border-gj-border bg-gj-surface-elevated p-3 shadow-lg">
+                  <p className="mb-2 text-xs font-semibold text-white">
+                    Comparação com a semana anterior
+                  </p>
+                  <div className="space-y-1 text-[11px] leading-[1.45] text-gj-text-secondary">
+                    <p>↑ aumentou</p>
+                    <p>↓ diminuiu</p>
+                    <p>= sem variação relevante</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Rows */}
           {rows.map((row, i) => (

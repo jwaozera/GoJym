@@ -57,9 +57,9 @@ const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[
 ]
 
 const comparisonIconStyles: Record<ComparisonState, string> = {
-  up: 'bg-gj-success/20 text-gj-success',
-  down: 'bg-red-500/20 text-red-400',
-  equal: 'bg-gj-text-secondary/20 text-gj-text-secondary',
+  up: 'bg-[#1E2433] text-[#D1D5DB] border border-[#2A3142]',
+  down: 'bg-[#1E2433] text-[#D1D5DB] border border-[#2A3142]',
+  equal: 'bg-[#1E2433] text-[#D1D5DB] border border-[#2A3142]',
 }
 
 const ComparisonIcon = ({ state, size = 'sm' }: { state: ComparisonState; size?: 'sm' | 'md' }) => {
@@ -132,7 +132,7 @@ export const HomePage = () => {
       {/* ===== STATS SEMANAIS CARD (clicável) ===== */}
       <button
         onClick={() => setShowWeeklySheet(true)}
-        className="h-[170px] rounded-gj-lg border border-gj-accent/20 bg-gj-surface relative overflow-hidden text-left w-full cursor-pointer hover:border-gj-accent/40 transition-colors"
+        className="h-[170px] rounded-gj-lg border border-gj-border bg-gj-surface relative overflow-hidden text-left w-full cursor-pointer hover:border-gj-accent/40 focus-visible:border-gj-accent/40 transition-colors"
       >
         <div className="absolute left-4 top-[14px] flex h-[21px] items-center rounded-full bg-white/[0.05] px-2">
           <span className="text-[10px] text-gj-text-secondary leading-[15px]">semana atual</span>
@@ -181,7 +181,7 @@ export const HomePage = () => {
       {/* ===== BAR CHART (clicável) ===== */}
       <button
         onClick={() => setShowDailySheet(true)}
-        className="h-[199px] rounded-gj-lg bg-gj-surface border border-gj-accent/20 p-4 text-left w-full cursor-pointer hover:border-gj-accent/40 transition-colors"
+        className="h-[199px] rounded-gj-lg bg-gj-surface border border-gj-border p-4 text-left w-full cursor-pointer hover:border-gj-accent/40 focus-visible:border-gj-accent/40 transition-colors"
       >
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-semibold text-white leading-[1.43]">Séries por dia</span>
@@ -224,7 +224,7 @@ export const HomePage = () => {
 
       {/* ===== EM PROGRESSO SESSION (real) ===== */}
       {activeExecution && (
-        <Card className="!border-gj-accent/30">
+        <Card>
           <span className="text-[10px] font-semibold text-gj-accent leading-[1.5] tracking-wider uppercase">
             Em andamento
           </span>

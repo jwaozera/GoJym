@@ -28,7 +28,8 @@ export const ResetPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gj-bg flex flex-col px-6">
+    <div className="min-h-screen bg-gj-bg">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-[430px] flex-col px-6">
       {/* Back button */}
       <button
         onClick={() => navigate('/login')}
@@ -114,6 +115,7 @@ export const ResetPasswordPage = () => {
             </p>
           </form>
         )}
+      </div>
       </div>
     </div>
   )
