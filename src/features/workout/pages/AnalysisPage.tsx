@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { BarChart3, Check, ChevronDown, Medal, Search } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { BarChart3, Check, ChevronDown, Info, Medal, Search } from 'lucide-react'
 import { Card } from '../../../components/ui'
 
 type PeriodOption = 'Últimas 4 semanas' | 'Últimas 8 semanas' | 'Últimas 12 semanas' | 'Este mês'
@@ -129,6 +129,21 @@ export const AnalysisPage = () => {
   const [showPeriodSheet, setShowPeriodSheet] = useState(false)
   const [showExerciseSheet, setShowExerciseSheet] = useState(false)
   const [showSummarySheet, setShowSummarySheet] = useState(false)
+  const [showPeriodTooltip, setShowPeriodTooltip] = useState(false)
+  const periodTooltipRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showPeriodTooltip) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!periodTooltipRef.current?.contains(event.target as Node)) {
+        setShowPeriodTooltip(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [showPeriodTooltip])
 
   const filteredExercises = useMemo(() => {
     const query = exerciseSearch.trim().toLowerCase()
@@ -166,15 +181,38 @@ export const AnalysisPage = () => {
     <div className="flex flex-col gap-3 px-5 pt-14 pb-4">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-bold text-white leading-[1.4]">Análise</h1>
-        <button
-          type="button"
-          onClick={() => setShowPeriodSheet(true)}
-          className="h-10 px-3 rounded-gj-lg bg-gj-surface-elevated border border-gj-border flex items-center gap-1.5 text-white hover:border-white/30 hover:bg-white/5 focus:border-white/30 focus-visible:outline-white/40 transition-colors cursor-pointer"
-          aria-label="Selecionar período"
-        >
-          <span className="text-xs font-semibold leading-[1.33]">{selectedPeriod}</span>
-          <ChevronDown size={14} className="text-gj-text-secondary" />
-        </button>
+        <div className="flex items-center gap-2">
+          <div ref={periodTooltipRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowPeriodTooltip((value) => !value)}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-gj-text-secondary transition-colors hover:bg-white/5 hover:text-white"
+              aria-label="Explicar labels do período"
+              aria-expanded={showPeriodTooltip}
+            >
+              <Info size={14} />
+            </button>
+
+            {showPeriodTooltip && (
+              <div className="absolute left-1/2 top-11 z-[50] w-[min(254px,calc(100vw-40px))] -translate-x-1/2 rounded-gj-md border border-gj-border bg-gj-surface-elevated p-3 shadow-lg">
+                <div className="space-y-2 text-[11px] leading-[1.45] text-gj-text-secondary">
+                  <p>S1, S2, S3... = semanas do período selecionado</p>
+                  <p>M1, M2, M3 = meses agrupados em 12 semanas</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowPeriodSheet(true)}
+            className="h-10 px-3 rounded-gj-lg bg-gj-surface-elevated border border-gj-border flex items-center gap-1.5 text-white hover:border-white/30 hover:bg-white/5 focus:border-white/30 focus-visible:outline-white/40 transition-colors cursor-pointer"
+            aria-label="Selecionar período"
+          >
+            <span className="text-xs font-semibold leading-[1.33]">{selectedPeriod}</span>
+            <ChevronDown size={14} className="text-gj-text-secondary" />
+          </button>
+        </div>
       </div>
 
       {analysisStatus === 'empty' ? (
@@ -209,7 +247,6 @@ export const AnalysisPage = () => {
           <Card className="!p-4 h-[194px] flex flex-col">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-sm font-semibold text-white leading-[1.43]">Ritmo no período</h2>
-              <BarChart3 size={16} className="text-gj-text-secondary" />
             </div>
             <div className="flex flex-1 items-center justify-center rounded-gj-lg bg-gj-bg/50 px-6 text-center">
               <p className="text-sm text-gj-text-secondary leading-[1.43]">
@@ -297,7 +334,6 @@ export const AnalysisPage = () => {
       <Card className="!p-4 h-[194px]">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-white leading-[1.43]">Ritmo no período</h2>
-            <BarChart3 size={16} className="text-gj-text-secondary" />
           </div>
           <p className="mb-3">
             <span className="text-xl font-bold text-white leading-[1.4]">
