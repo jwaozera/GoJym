@@ -45,7 +45,7 @@ export const ExecuteWorkoutPage = () => {
   const navigate = useNavigate()
   const timer = useTimer()
 
-  const { sessions, fetchSessions } = useWorkoutStore()
+  const { sessions, fetchSessions, clearActiveExecution } = useWorkoutStore()
 
   useEffect(() => {
     fetchSessions()
@@ -227,6 +227,7 @@ export const ExecuteWorkoutPage = () => {
 
   const handleFinishWorkout = () => {
     timer.pause()
+    clearActiveExecution()
     setSummaryMode('completed')
     setView('summary')
   }
@@ -242,6 +243,7 @@ export const ExecuteWorkoutPage = () => {
   const handleEndSheetFinish = () => {
     setShowEndSheet(false)
     timer.pause()
+    clearActiveExecution()
     setSummaryMode('partial')
     setView('summary')
   }
@@ -249,6 +251,7 @@ export const ExecuteWorkoutPage = () => {
   const handleEndSheetDiscard = () => {
     setShowEndSheet(false)
     timer.reset()
+    clearActiveExecution()
     navigate('/workouts')
   }
 

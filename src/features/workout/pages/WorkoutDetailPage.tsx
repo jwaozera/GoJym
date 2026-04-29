@@ -6,7 +6,7 @@ import { ArrowLeft, Pencil, Play, Timer } from 'lucide-react'
 export const WorkoutDetailPage = () => {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { sessions, fetchSessions, loading } = useWorkoutStore()
+  const { sessions, fetchSessions, loading, startActiveSession } = useWorkoutStore()
 
   useEffect(() => {
     fetchSessions()
@@ -37,6 +37,11 @@ export const WorkoutDetailPage = () => {
   }
 
   const exerciseCount = session.exercises.length
+
+  const handleStartSession = () => {
+    startActiveSession(session.id)
+    navigate(`/workout/execute/${session.id}`)
+  }
 
   return (
     <div className="flex flex-col min-h-full">
@@ -121,7 +126,7 @@ export const WorkoutDetailPage = () => {
       {/* ===== BOTTOM ACTION ===== */}
       <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
         <button
-          onClick={() => navigate(`/workout/execute/${session.id}`)}
+          onClick={handleStartSession}
           className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20"
         >
           <Play size={16} fill="white" />

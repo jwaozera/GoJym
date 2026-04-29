@@ -2,7 +2,7 @@ import { useReducer, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Exercise } from '../../../types'
 import { useWorkoutStore } from '../../../store/workoutStore'
-import { Input, Button } from '../../../components/ui'
+import { Input } from '../../../components/ui'
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal'
 import {
   ArrowLeft,
@@ -12,7 +12,6 @@ import {
   Dumbbell,
   CheckCircle,
   Save,
-  Play,
 } from 'lucide-react'
 
 /* ----- tipos do reducer ----- */
@@ -85,7 +84,6 @@ export const CreateWorkoutPage = () => {
   const [state, dispatch] = useReducer(formReducer, initialState)
   const createSession = useWorkoutStore(s => s.createSession)
   const [showSearch, setShowSearch] = useState(false)
-  const [starting, setStarting] = useState(false)
   const [toast, setToast] = useState<{ show: boolean; leaving: boolean }>({
     show: false,
     leaving: false,
@@ -95,14 +93,13 @@ export const CreateWorkoutPage = () => {
     dispatch({ type: 'ADD_EXERCISE', exercise })
   }
 
-  const handleStart = async () => {
+  const handleSave = async () => {
     if (!state.name.trim() || state.exercises.length === 0) return
 
     try {
-      setStarting(true)
-      const session = await createSession({
+      await createSession({
         name: state.name,
-        isActive: true,
+        isActive: false,
         exercises: state.exercises.map(row => ({
           id: `we-${crypto.randomUUID()}`,
           exercise: row.exercise,
@@ -116,26 +113,18 @@ export const CreateWorkoutPage = () => {
           })),
         })),
       })
-      navigate(`/workout/execute/${session.id}`)
+
+      setToast({ show: true, leaving: false })
+      setTimeout(() => {
+        setToast({ show: true, leaving: true })
+        setTimeout(() => {
+          setToast({ show: false, leaving: false })
+          navigate('/workouts')
+        }, 300)
+      }, 1800)
     } catch {
       // Tratamento de erro futuro
-    } finally {
-      setStarting(false)
     }
-  }
-
-  const handleSave = () => {
-    if (!state.name.trim()) return
-
-    // mostrar toast
-    setToast({ show: true, leaving: false })
-    setTimeout(() => {
-      setToast({ show: true, leaving: true })
-      setTimeout(() => {
-        setToast({ show: false, leaving: false })
-        navigate('/workouts')
-      }, 300)
-    }, 1800)
   }
 
   return (
@@ -208,28 +197,15 @@ export const CreateWorkoutPage = () => {
       </div>
 
       {/* ===== BOTTOM BAR ===== */}
-      <div className="px-5 py-4 border-t border-gj-border bg-gj-bg">
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={handleSave}
-            disabled={!state.name.trim() || state.exercises.length === 0}
-          >
-            <Save size={16} />
-            Salvar treino
-          </Button>
-          <Button
-            variant="primary"
-            fullWidth
-            loading={starting}
-            disabled={!state.name.trim() || state.exercises.length === 0}
-            onClick={handleStart}
-          >
-            <Play size={16} fill="white" />
-            Iniciar
-          </Button>
-        </div>
+      <div className="px-5 pt-4 pb-8 bg-gj-bg">
+        <button
+          onClick={handleSave}
+          disabled={!state.name.trim() || state.exercises.length === 0}
+          className="w-full h-12 rounded-gj-lg bg-gj-accent text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-gj-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Save size={16} />
+          Salvar treino
+        </button>
       </div>
 
       {/* ===== SEARCH MODAL ===== */}

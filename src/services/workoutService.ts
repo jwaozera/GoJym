@@ -57,4 +57,12 @@ export const workoutService = {
     }
     console.log('[mock] saveExecutionResult', sessionId, result)
   },
+
+  setActiveSession: (sessionId: string): void => {
+    sessions = sessions.map(s => ({ ...s, isActive: s.id === sessionId }))
+  },
+
+  clearActiveSession: (): void => {
+    sessions = sessions.map(s => ({ ...s, isActive: false }))
+  },
 }
