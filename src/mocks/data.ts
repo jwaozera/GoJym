@@ -330,4 +330,4 @@ export const mockSessions: WorkoutSession[] = [
     completedAt: new Date('2026-04-25'),
     durationSeconds: 3800,
   },
-]
+].slice(0, 6)

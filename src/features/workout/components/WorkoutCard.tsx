@@ -1,5 +1,5 @@
 import type { WorkoutSession } from '../../../types'
-import { Dumbbell, Clock, Play, ChevronRight } from 'lucide-react'
+import { Dumbbell, Play, ChevronRight } from 'lucide-react'
 
 interface WorkoutCardProps {
   session: WorkoutSession
@@ -8,11 +8,9 @@ interface WorkoutCardProps {
 
 export const WorkoutCard = ({ session, onPress }: WorkoutCardProps) => {
   const exerciseCount = session.exercises.length
-  const duration = session.durationSeconds
-    ? `${Math.round(session.durationSeconds / 60)} min`
-    : null
+  const lastPerformedAt = session.completedAt ?? session.createdAt
 
-  const dateStr = new Date(session.createdAt).toLocaleDateString('pt-BR', {
+  const dateStr = new Date(lastPerformedAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
   })
@@ -44,12 +42,6 @@ export const WorkoutCard = ({ session, onPress }: WorkoutCardProps) => {
               <Dumbbell size={12} />
               {exerciseCount} exercício{exerciseCount !== 1 ? 's' : ''}
             </span>
-            {duration && (
-              <span className="flex items-center gap-1">
-                <Clock size={12} />
-                {duration}
-              </span>
-            )}
             <span>{dateStr}</span>
           </div>
         </div>
