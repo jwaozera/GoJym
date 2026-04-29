@@ -5,7 +5,7 @@ export const profileMeta = {
 
 export const fallbackProfile = {
   name: 'Artur Ferreira Marques da Silva',
-  email: 'joao@email.com',
+  email: 'artur@email.com',
 }
 
 export interface ExerciseRecord {

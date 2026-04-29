@@ -8,7 +8,6 @@ import { DailySeriesSheet } from '../components/DailySeriesSheet'
 import {
   Calendar,
   TrendingUp,
-  TrendingDown,
   Flame,
   Timer,
   ChevronRight,
@@ -19,12 +18,12 @@ import {
 
 /* ====== Mock data ====== */
 const WEEKLY_DATA = [
-  { day: 'Seg', sets: 18, active: true },
-  { day: 'Ter', sets: 24, active: true },
+  { day: 'Seg', sets: 10, active: true },
+  { day: 'Ter', sets: 14, active: true },
   { day: 'Qua', sets: 0, active: false },
-  { day: 'Qui', sets: 15, active: true },
-  { day: 'Sex', sets: 0, active: false },
-  { day: 'Sáb', sets: 20, active: true },
+  { day: 'Qui', sets: 21, active: true },
+  { day: 'Sex', sets: 17, active: true },
+  { day: 'Sáb', sets: 12, active: true },
   { day: 'Dom', sets: 0, active: false },
 ]
 
@@ -48,14 +47,32 @@ const WEEKLY_STATS = {
   mostFrequentWorkout: 'Treino A — Push',
 }
 
-const TREND = { value: 12, positive: true } // +12%
+type ComparisonState = 'up' | 'down' | 'equal'
 
 /* submetrica de trends (Sessões, Tempo, Carga total) */
-const SUB_TRENDS: { label: string; value: string; trend: 'down' | 'up' | 'neutral' }[] = [
-  { label: 'Sessões', value: '4', trend: 'down' },
-  { label: 'Tempo', value: '4:32', trend: 'down' },
-  { label: 'Carga total', value: '8.4t', trend: 'neutral' },
+const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = [
+  { label: 'Sessões', value: '4', comparison: 'down' },
+  { label: 'Tempo', value: '4:32', comparison: 'up' },
+  { label: 'Carga total', value: '8.4t', comparison: 'equal' },
 ]
+
+const comparisonIconStyles: Record<ComparisonState, string> = {
+  up: 'bg-gj-success/20 text-gj-success',
+  down: 'bg-red-500/20 text-red-400',
+  equal: 'bg-gj-text-secondary/20 text-gj-text-secondary',
+}
+
+const ComparisonIcon = ({ state, size = 'sm' }: { state: ComparisonState; size?: 'sm' | 'md' }) => {
+  const Icon = state === 'up' ? ArrowUp : state === 'down' ? ArrowDown : Equal
+  const boxSize = size === 'md' ? 'w-6 h-[21px]' : 'w-6 h-[21px]'
+  const iconSize = size === 'md' ? 13 : 12
+
+  return (
+    <div className={`${boxSize} rounded-full flex shrink-0 items-center justify-center self-center ${comparisonIconStyles[state]}`}>
+      <Icon size={iconSize} strokeWidth={3} />
+    </div>
+  )
+}
 
 export const HomePage = () => {
   const navigate = useNavigate()
@@ -85,10 +102,7 @@ export const HomePage = () => {
     const now = new Date()
     const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
     const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-    const weekNum = Math.ceil(
-      (now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
-    )
-    return `${weekDays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]} • Semana ${weekNum}`
+    return `${weekDays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
   }, [])
 
   // streak (mock: 21 semanas)
@@ -99,16 +113,16 @@ export const HomePage = () => {
   const maxSets = Math.max(...chartData.map((d) => d.sets), 1)
 
   return (
-    <div className="flex flex-col gap-3 px-5 pt-14 pb-4">
+    <div className="mx-auto flex w-full max-w-[393px] flex-col gap-3 px-5 pt-14 pb-4">
       {/* ===== HEADER ===== */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between pb-2">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-xl font-bold text-white leading-[1.4]">Início</h1>
           <p className="text-xs text-gj-text-secondary leading-[1.33]">{dateString}</p>
         </div>
         <button
           onClick={() => setShowCalendar(true)}
-          className="w-10 h-10 rounded-gj-lg bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary hover:text-white transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-gj-lg bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary hover:text-white hover:border-white/40 transition-colors cursor-pointer"
           aria-label="Calendário"
         >
           <Calendar size={18} />
@@ -118,118 +132,82 @@ export const HomePage = () => {
       {/* ===== STATS SEMANAIS CARD (clicável) ===== */}
       <button
         onClick={() => setShowWeeklySheet(true)}
-        className="rounded-gj-lg border border-gj-border p-5 relative overflow-hidden text-left w-full cursor-pointer hover:border-gj-accent/30 transition-colors"
-        style={{
-          background: 'linear-gradient(135deg, #141824 0%, #161A27 20%, #181D2A 40%, #1A1F2D 60%, #1C2230 80%, #1E2433 100%)',
-        }}
+        className="h-[170px] rounded-gj-lg border border-gj-accent/20 bg-gj-surface relative overflow-hidden text-left w-full cursor-pointer hover:border-gj-accent/40 transition-colors"
       >
-        {/* Row 1: Title + badge + chart icon */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white leading-[1.43]">Séries Semanais</span>
-            <span className="text-[10px] text-gj-text-secondary leading-[1.5]">semana atual</span>
-          </div>
-          <div className="w-10 h-10 rounded-gj-md bg-gj-accent-soft flex items-center justify-center">
-            <TrendingUp size={20} className="text-gj-accent" />
-          </div>
+        <div className="absolute left-4 top-[14px] flex h-[21px] items-center rounded-full bg-white/[0.05] px-2">
+          <span className="text-[10px] text-gj-text-secondary leading-[15px]">semana atual</span>
         </div>
-
-        {/* Row 2: Big number + trend arrow */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-4xl font-bold text-white leading-none">
-            {WEEKLY_STATS.totalSeries}
-          </span>
-          <div className="w-5 h-5 rounded-full bg-gj-success/20 flex items-center justify-center">
-            <ArrowUp size={12} className="text-gj-success" strokeWidth={3} />
-          </div>
-        </div>
-
-        {/* Separator */}
-        <div className="h-px bg-gj-border mb-4" />
 
         {/* Row 3: 3-column sub-metrics */}
-        <div className="flex items-start">
+        <div className="absolute left-3 top-14 flex h-[43px] w-[327px] items-start">
           {SUB_TRENDS.map((metric, i) => (
             <div
               key={metric.label}
-              className={`flex-1 flex flex-col items-center gap-0.5 ${
+              className={`flex-1 flex flex-col items-center gap-0 ${
                 i === 1 ? 'border-x border-gj-border' : ''
               }`}
             >
-              <div className="flex items-center gap-1">
-                <span className="text-lg font-bold text-white leading-[1.4]">{metric.value}</span>
-                {metric.trend === 'down' && (
-                  <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center">
-                    <ArrowDown size={10} className="text-red-400" strokeWidth={3} />
-                  </div>
-                )}
-                {metric.trend === 'up' && (
-                  <div className="w-4 h-4 rounded-full bg-gj-success/20 flex items-center justify-center">
-                    <ArrowUp size={10} className="text-gj-success" strokeWidth={3} />
-                  </div>
-                )}
-                {metric.trend === 'neutral' && (
-                  <div className="w-4 h-4 rounded-full bg-gj-text-secondary/20 flex items-center justify-center">
-                    <Equal size={10} className="text-gj-text-secondary" strokeWidth={3} />
-                  </div>
-                )}
+              <div className="flex h-7 items-center justify-center gap-1.5">
+                <span className="text-xl font-bold text-white leading-7">{metric.value}</span>
+                <ComparisonIcon state={metric.comparison} />
               </div>
               <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{metric.label}</span>
             </div>
           ))}
         </div>
 
-        {/* Row 4: Comparison footer */}
-        <div className="flex items-center justify-center mt-4">
-          <span className="text-[10px] text-gj-accent leading-[1.5]">
+        <div className="absolute left-[22px] top-[117px] h-px w-[309px] bg-gj-border" />
+
+        <div className="absolute left-[21px] top-[132px] flex w-[309px] justify-center">
+          <span className="text-center text-[11px] text-[#6b7280] leading-[16.5px] tracking-[0.2px]">
             comparação semana atual × semana passada
           </span>
         </div>
       </button>
 
       {/* ===== STREAK CARD ===== */}
-      <Card className="!p-0 overflow-hidden">
-        <div className="flex items-center gap-5 p-5">
-          {/* Fire icon */}
-          <div className="w-14 h-14 rounded-gj-lg bg-gj-accent-soft flex items-center justify-center shrink-0">
-            <Flame size={26} className="text-gj-accent" />
-          </div>
-          {/* Text block */}
-          <div className="flex flex-col">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[32px] font-bold text-white leading-none">{streakWeeks}</span>
-              <span className="text-[13px] font-semibold text-gj-accent leading-[1.5]">semanas</span>
-            </div>
-            <span className="text-xs text-gj-text-secondary mt-1">Streak de semanas ativas</span>
-          </div>
+      <Card className="!p-0 h-[129px] overflow-hidden relative">
+        <div className="absolute left-[26px] top-[34px] w-14 h-14 rounded-gj-lg bg-gj-accent-soft flex items-center justify-center">
+          <Flame size={29} className="text-gj-accent" />
         </div>
-        {/* Divider at bottom */}
-        <div className="h-px bg-gj-border mx-5" />
+        <div className="absolute left-[98px] top-[33px] h-[55px] w-[181px]">
+          <span className="absolute left-0 top-2 text-2xl font-bold text-white leading-9">{streakWeeks}</span>
+          <span className="absolute left-[31px] top-[21px] text-[13px] font-semibold text-gj-accent leading-[19.5px]">semanas</span>
+          <span className="absolute left-0 top-[39px] text-[11px] text-gj-text-secondary leading-4">Streak de semanas ativas</span>
+        </div>
+        <div className="absolute left-[98px] top-[97px] h-px w-[226px] bg-gj-border" />
       </Card>
 
       {/* ===== BAR CHART (clicável) ===== */}
       <button
         onClick={() => setShowDailySheet(true)}
-        className="rounded-gj-lg bg-gj-surface border border-gj-border p-4 text-left w-full cursor-pointer hover:border-gj-accent/30 transition-colors"
+        className="h-[199px] rounded-gj-lg bg-gj-surface border border-gj-accent/20 p-4 text-left w-full cursor-pointer hover:border-gj-accent/40 transition-colors"
       >
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-semibold text-white leading-[1.43]">Séries por dia</span>
           <TrendingUp size={16} className="text-gj-text-secondary" />
         </div>
-        <span className="text-[10px] text-gj-text-secondary leading-[1.5] block mb-3">
+        <span className="text-xs text-gj-text-secondary leading-[1.25] block mb-[23px]">
           {selectedWeek === 'current' ? 'Semana atual' : 'Semana passada'}
         </span>
 
-        <div className="flex items-end justify-between gap-1.5 h-[100px]">
+        <div className="flex items-end justify-between h-[102px]">
           {chartData.map((d) => {
-            const heightPct = d.sets > 0 ? Math.max((d.sets / maxSets) * 100, 10) : 8
+            const heightPx = d.sets > 0 ? Math.min(Math.round(16 + (d.sets / maxSets) * 48), 64) : 8
             return (
-              <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
-                <div className="w-full flex items-end justify-center" style={{ height: '80px' }}>
+              <div key={d.day} className="flex w-[34.375px] flex-col items-center gap-1">
+                {d.sets > 0 ? (
+                  <span className="h-[15px] text-[10px] text-gj-text-secondary leading-[1.5]">
+                    {d.sets}
+                  </span>
+                ) : (
+                  <span className="h-[15px]" />
+                )}
+                <div className="w-[34.375px] flex items-end justify-center px-[3px]" style={{ height: '64px' }}>
                   <div
                     className="w-full max-w-[28px] transition-all duration-500"
                     style={{
-                      height: `${heightPct}%`,
+                      height: `${heightPx}px`,
                       borderRadius: '10px',
                       background: d.active
                         ? 'linear-gradient(0deg, #FF6B35 0%, #FF8F5E 100%)'
