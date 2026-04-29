@@ -9,6 +9,9 @@ import { EditWorkoutPage } from '../features/workout/pages/EditWorkoutPage'
 import { CreateWorkoutPage } from '../features/workout/pages/CreateWorkoutPage'
 import { ExecuteWorkoutPage } from '../features/workout/pages/ExecuteWorkoutPage'
 import { AnalysisPage } from '../features/workout/pages/AnalysisPage'
+import { ProfilePage } from '../features/profile/pages/ProfilePage'
+import { EditProfilePage } from '../features/profile/pages/EditProfilePage'
+import { PersonalRecordsPage } from '../features/profile/pages/PersonalRecordsPage'
 import { AppLayout } from '../components/AppLayout'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 
@@ -28,7 +31,16 @@ export const router = createBrowserRouter([
       { path: 'workout/create', element: <CreateWorkoutPage /> },
       { path: 'workout/execute/:sessionId', element: <ExecuteWorkoutPage /> },
       { path: 'analysis', element: <AnalysisPage /> },
+      { path: 'profile', element: <ProfilePage /> },
     ],
+  },
+  {
+    path: '/profile/edit',
+    element: <ProtectedRoute><EditProfilePage /></ProtectedRoute>,
+  },
+  {
+    path: '/profile/records',
+    element: <ProtectedRoute><PersonalRecordsPage /></ProtectedRoute>,
   },
   { path: '*', element: <Navigate to="/home" replace /> },
 ])
