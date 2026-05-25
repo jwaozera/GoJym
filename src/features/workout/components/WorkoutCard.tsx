@@ -7,8 +7,8 @@ interface WorkoutCardProps {
 }
 
 export const WorkoutCard = ({ session, onPress }: WorkoutCardProps) => {
-  const exerciseCount = session.exercises.length
-  const lastPerformedAt = session.completedAt ?? session.createdAt
+  const exerciseCount = session.qtdExercicios
+  const lastPerformedAt = session.completedAt ?? new Date(session.createdAt)
 
   const dateStr = new Date(lastPerformedAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -34,7 +34,7 @@ export const WorkoutCard = ({ session, onPress }: WorkoutCardProps) => {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1.5 min-w-0 flex-1">
           <span className="text-sm font-semibold text-white truncate">
-            {session.name}
+            {session.nome}
           </span>
 
           <div className="flex items-center gap-3 text-xs text-gj-text-secondary">

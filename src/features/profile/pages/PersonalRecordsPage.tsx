@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Check, ChevronDown, Clock, Dumbbell, ListChecks, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '../../../components/ui/Card'
-import { workoutRecords, type SessionRecord } from '../data/mockProfile'
+import { profileService, type SessionRecord, type WorkoutRecords } from '../../../services/profileService'
 
 const headerButtonClass =
   'w-9 h-9 rounded-gj-md bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary transition-colors duration-200 hover:text-white hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2'
@@ -15,17 +15,42 @@ const sessionIconMap: Record<SessionRecord['icon'], typeof Dumbbell> = {
 
 export const PersonalRecordsPage = () => {
   const navigate = useNavigate()
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState(workoutRecords[0]?.id ?? '')
+  const [workoutRecords, setWorkoutRecords] = useState<WorkoutRecords[]>([])
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string>('')
   const [showWorkoutSheet, setShowWorkoutSheet] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      setLoading(true)
+      const records = await profileService.getWorkoutRecords()
+      setWorkoutRecords(records)
+      if (records.length > 0) {
+        setSelectedWorkoutId(records[0].id)
+      }
+      setLoading(false)
+    }
+    fetchRecords()
+  }, [])
 
   const selectedWorkout = useMemo(
     () => workoutRecords.find((workout) => workout.id === selectedWorkoutId) ?? workoutRecords[0],
-    [selectedWorkoutId]
+    [selectedWorkoutId, workoutRecords]
   )
 
   const handleSelectWorkout = (workoutId: string) => {
     setSelectedWorkoutId(workoutId)
     setShowWorkoutSheet(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gj-background text-gj-text-primary">
+        <div className="mx-auto min-h-screen max-w-[430px] overflow-x-hidden flex items-center justify-center">
+          <p className="text-gj-text-secondary">Carregando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

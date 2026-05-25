@@ -98,10 +98,8 @@ export const ExerciseSearchModal = ({
                 <button
                   onClick={() => {
                     const custom: Exercise = {
-                      id: `custom-${Date.now()}`,
-                      name: search,
-                      category: 'Personalizado',
-                      muscleGroup: 'Outros',
+                      id: Number(Date.now()),
+                      nome: search,
                     }
                     onSelect(custom)
                     onClose()
@@ -123,10 +121,7 @@ export const ExerciseSearchModal = ({
                   className="flex items-center gap-3 p-3 rounded-gj-lg hover:bg-gj-surface-elevated transition-colors text-left cursor-pointer"
                 >
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-white">{ex.name}</span>
-                    <span className="text-[11px] text-gj-text-secondary">
-                      {ex.muscleGroup} • {ex.category}
-                    </span>
+                    <span className="text-sm font-medium text-white">{ex.nome}</span>
                   </div>
                 </button>
               ))

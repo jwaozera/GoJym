@@ -18,6 +18,7 @@ import {
 interface ExerciseRow {
   id: string
   exercise: Exercise
+  exercicioId: number
   sets: string
   reps: string
   rest: string
@@ -47,6 +48,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
           {
             id: `ex-${Date.now()}`,
             exercise: action.exercise,
+            exercicioId: action.exercise.id,
             sets: '3',
             reps: '8-12',
             rest: '90s',
@@ -98,32 +100,26 @@ export const CreateWorkoutPage = () => {
 
     try {
       await createSession({
-        name: state.name,
-        isActive: false,
-        exercises: state.exercises.map(row => ({
-          id: `we-${crypto.randomUUID()}`,
-          exercise: row.exercise,
-          restSeconds: parseInt(row.rest.replace('s', '')) || 90,
-          sets: Array.from({ length: parseInt(row.sets) || 3 }, (_, i) => ({
-            id: crypto.randomUUID(),
-            setNumber: i + 1,
-            weight: null,
-            reps: null,
-            completed: false,
-          })),
-        })),
+        nome: state.name,
+        exercicios: state.exercises.map((row, index) => {
+          const repParts = row.reps.split('-')
+          const repsMin = parseInt(repParts[0]) || 8
+          const repsMax = parseInt(repParts[1]) || repsMin
+
+          return {
+            exercicioId: row.exercicioId,
+            series: parseInt(row.sets) || 3,
+            repsMin,
+            repsMax,
+            descanso: parseInt(row.rest.replace('s', '')) || 90,
+            ordem: index + 1,
+          }
+        }),
       })
 
-      setToast({ show: true, leaving: false })
-      setTimeout(() => {
-        setToast({ show: true, leaving: true })
-        setTimeout(() => {
-          setToast({ show: false, leaving: false })
-          navigate('/workouts')
-        }, 300)
-      }, 1800)
-    } catch {
-      // Tratamento de erro futuro
+      navigate('/workouts')
+    } catch (error) {
+      console.error('Erro ao criar sessão:', error)
     }
   }
 
@@ -247,7 +243,7 @@ const ExerciseCard = ({ row, onUpdate, onRemove }: ExerciseCardProps) => (
         <div className="w-8 h-8 rounded-gj-md bg-gj-accent-soft flex items-center justify-center text-gj-accent">
           <GripVertical size={14} />
         </div>
-        <span className="text-sm font-semibold text-white">{row.exercise.name}</span>
+        <span className="text-sm font-semibold text-white">{row.exercise.nome}</span>
       </div>
       <button
         onClick={onRemove}

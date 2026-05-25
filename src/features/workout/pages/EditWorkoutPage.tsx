@@ -1,7 +1,7 @@
 import { useReducer, useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../../../store/workoutStore'
-import type { Exercise } from '../../../types'
+import type { Exercise, WorkoutSession } from '../../../types'
 import { Input, Button } from '../../../components/ui'
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal'
 import {
@@ -19,6 +19,7 @@ import {
 interface ExerciseRow {
   id: string
   exercise: Exercise
+  exercicioId: number
   sets: string
   reps: string
   rest: string
@@ -49,6 +50,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
           {
             id: `ex-${Date.now()}`,
             exercise: action.exercise,
+            exercicioId: action.exercise.id,
             sets: '3',
             reps: '8-12',
             rest: '90s',
@@ -87,36 +89,41 @@ const emptyState: FormState = {
 export const EditWorkoutPage = () => {
   const { sessionId } = useParams()
   const navigate = useNavigate()
-  const { sessions, fetchSessions, updateSession, deleteSession, loading } = useWorkoutStore()
+  const { getFullSession, updateSession, deleteSession } = useWorkoutStore()
+  const [session, setSession] = useState<WorkoutSession | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchSessions()
-  }, [fetchSessions])
-
-  const session = sessions.find((s) => s.id === sessionId)
+    const loadSession = async () => {
+      if (sessionId) {
+        const fullSession = await getFullSession(sessionId)
+        setSession(fullSession)
+      }
+      setLoading(false)
+    }
+    loadSession()
+  }, [sessionId, getFullSession])
 
   // converter sessão para FormState
   const buildInitialState = (): FormState => {
-    if (!session) return emptyState
+    if (!session || !session.exercicios) return emptyState
 
     return {
-      name: session.name,
-      exercises: session.exercises.map((we) => {
-        const reps = we.sets.map((s) => s.reps).filter((r): r is number => r !== null)
-        const minR = reps.length ? Math.min(...reps) : 0
-        const maxR = reps.length ? Math.max(...reps) : 0
-        return {
-          id: we.id,
-          exercise: we.exercise,
-          sets: String(we.sets.length),
-          reps: minR === maxR ? String(minR) : `${minR}-${maxR}`,
-          rest: `${we.restSeconds ?? 60}s`,
-        }
-      }),
+      name: session.nome,
+      exercises: session.exercicios.map((ex) => ({
+        id: ex.id,
+        exercise: { id: ex.exercicioId, nome: ex.exercicioNome } as Exercise,
+        exercicioId: ex.exercicioId,
+        sets: String(ex.numSeries),
+        reps: ex.repeticoesMin === ex.repeticoesMax 
+          ? String(ex.repeticoesMin) 
+          : `${ex.repeticoesMin}-${ex.repeticoesMax}`,
+        rest: `${ex.descanso}s`,
+      })),
     }
   }
 
-  const [state, dispatch] = useReducer(formReducer, buildInitialState())
+  const [state, dispatch] = useReducer(formReducer, emptyState)
   const [showSearch, setShowSearch] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [toast, setToast] = useState<{ show: boolean; leaving: boolean }>({
@@ -126,13 +133,13 @@ export const EditWorkoutPage = () => {
 
   // Re-init form if session data arrives after initial render
   useEffect(() => {
-    if (session) {
+    if (session && session.exercicios) {
       dispatch({ type: 'INIT', state: buildInitialState() })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id])
 
-  if (loading && sessions.length === 0) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <span className="text-sm text-gj-text-secondary">Carregando...</span>
@@ -157,30 +164,60 @@ export const EditWorkoutPage = () => {
   const handleSave = async () => {
     if (!state.name.trim()) return
 
-    await updateSession(session.id, {
-      name: state.name,
-      exercises: state.exercises.map((row) => ({
-        id: row.id,
-        exercise: row.exercise,
-        restSeconds: parseInt(row.rest.replace('s', '')) || 60,
-        sets: Array.from({ length: parseInt(row.sets) || 3 }, (_, i) => ({
-          id: crypto.randomUUID(),
-          setNumber: i + 1,
-          weight: null,
-          reps: null,
-          completed: false,
-        })),
-      })),
-    })
+    try {
+      const payload = {
+        nome: state.name,
+        exercicios: state.exercises.map((row, index) => {
+          const repParts = row.reps.split('-')
+          const repsMin = parseInt(repParts[0]) || 8
+          const repsMax = parseInt(repParts[1]) || repsMin
 
-    setToast({ show: true, leaving: false })
-    setTimeout(() => {
-      setToast({ show: true, leaving: true })
+          const isNewExercise = row.id.startsWith('ex-')
+          console.log(`Exercício ${index}: id=${row.id}, isNew=${isNewExercise}, exercicioId=${row.exercicioId}`)
+
+          // Para novo exercício (ID temporário), não incluir campo "id"
+          if (isNewExercise) {
+            const novoExercicio = {
+              exercicioId: row.exercicioId,
+              series: parseInt(row.sets) || 3,
+              repsMin,
+              repsMax,
+              descanso: parseInt(row.rest.replace('s', '')) || 60,
+              ordem: index + 1,
+            }
+            console.log('Novo exercício (sem id):', novoExercicio)
+            return novoExercicio
+          }
+
+          // Para exercício existente, incluir o campo "id"
+          const exercicioExistente = {
+            id: row.id,
+            exercicioId: row.exercicioId,
+            series: parseInt(row.sets) || 3,
+            repsMin,
+            repsMax,
+            descanso: parseInt(row.rest.replace('s', '')) || 60,
+            ordem: index + 1,
+          }
+          console.log('Exercício existente (com id):', exercicioExistente)
+          return exercicioExistente
+        }),
+      }
+
+      console.log('Payload completo:', JSON.stringify(payload, null, 2))
+      await updateSession(session.id, payload)
+
+      setToast({ show: true, leaving: false })
       setTimeout(() => {
-        setToast({ show: false, leaving: false })
-        navigate(`/workouts/${session.id}`)
-      }, 300)
-    }, 1800)
+        setToast({ show: true, leaving: true })
+        setTimeout(() => {
+          setToast({ show: false, leaving: false })
+          navigate(`/workouts/${session.id}`)
+        }, 300)
+      }, 1800)
+    } catch (error) {
+      console.error('Erro ao atualizar sessão:', error)
+    }
   }
 
   const handleDelete = async () => {
@@ -344,7 +381,7 @@ const ExerciseCardInline = ({ row, onUpdate, onRemove }: ExerciseCardInlineProps
         <div className="w-8 h-8 rounded-gj-md bg-gj-accent-soft flex items-center justify-center text-gj-accent">
           <GripVertical size={14} />
         </div>
-        <span className="text-sm font-semibold text-white">{row.exercise.name}</span>
+        <span className="text-sm font-semibold text-white">{row.exercise.nome}</span>
       </div>
       <button
         onClick={onRemove}

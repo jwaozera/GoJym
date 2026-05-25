@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { apiClient } from '../services/api'
+import { decodeJWT } from '../utils/jwt'
 import type { User } from '../types'
 
 interface AuthState {
@@ -16,20 +18,69 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: async (email, _password) => {
-        await new Promise((r) => setTimeout(r, 800))
-        set({ user: { id: '1', name: 'Artur Ferreira Marques da Silva', email }, isAuthenticated: true })
+      login: async (email, password) => {
+        try {
+          const token = await apiClient.post<string>('/auth/login', {
+            email,
+            senhaHash: password,
+          })
+
+          if (!token) {
+            throw new Error('No token received from server')
+          }
+
+          // Decodificar JWT para extrair dados do usuário
+          const payload = decodeJWT(token)
+          const user: User = {
+            id: payload.sub || payload.id || '1',
+            name: payload.name || email,
+            email: payload.email || email,
+          }
+
+          localStorage.setItem('token', token)
+          set({ user, isAuthenticated: true })
+        } catch (error) {
+          console.error('Login failed:', error)
+          throw error
+        }
       },
-      register: async (name, email, _password) => {
-        await new Promise((r) => setTimeout(r, 800))
-        set({ user: { id: '1', name, email }, isAuthenticated: true })
+      register: async (name, email, password) => {
+        try {
+          const token = await apiClient.post<string>('/auth/register', {
+            nome:name,
+            email,
+            senhaHash: password,
+          })
+
+          if (!token) {
+            throw new Error('No token received from server')
+          }
+
+          // Decodificar JWT para extrair dados do usuário
+          const payload = decodeJWT(token)
+          const user: User = {
+            id: payload.sub || payload.id || '1',
+            name: payload.name || name,
+            email: payload.email || email,
+          }
+
+          localStorage.setItem('token', token)
+          set({ user, isAuthenticated: true })
+        } catch (error) {
+          console.error('Registration failed:', error)
+          throw error
+        }
       },
-      updateProfile: (data) =>
+      updateProfile: (data) => {
         set((state) => ({
           user: state.user ? { ...state.user, ...data } : { id: '1', ...data },
           isAuthenticated: true,
-        })),
-      logout: () => set({ user: null, isAuthenticated: false }),
+        }))
+      },
+      logout: () => {
+        set({ user: null, isAuthenticated: false })
+        localStorage.removeItem('token')
+      },
     }),
     { name: 'gojym-auth' }
   )

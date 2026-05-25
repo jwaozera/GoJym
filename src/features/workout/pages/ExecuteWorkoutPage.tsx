@@ -1,20 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useWorkoutStore } from '../../../store/workoutStore'
-import { useTimer } from '../../../hooks/useTimer'
-import { SetInputRow } from '../components/SetInputRow'
-import { RestTimer } from '../components/RestTimer'
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Trophy,
-  Clock,
-  Flame,
-  Dumbbell,
-  Award,
-  CheckCircle,
-} from 'lucide-react'
+import type { WorkoutSession } from '../../../types'
 
 /* ====== tipos internos ====== */
 interface LiveSet {
@@ -45,40 +29,47 @@ export const ExecuteWorkoutPage = () => {
   const navigate = useNavigate()
   const timer = useTimer()
 
-  const { sessions, fetchSessions, clearActiveExecution } = useWorkoutStore()
+  const { getFullSession, clearActiveExecution } = useWorkoutStore()
+  const [session, setSession] = useState<WorkoutSession | null>(null)
+  const [sessionLoading, setSessionLoading] = useState(true)
 
   useEffect(() => {
-    fetchSessions()
-  }, [fetchSessions])
-
-  const session = sessions.find((s) => s.id === sessionId)
+    const loadSession = async () => {
+      if (sessionId) {
+        const fullSession = await getFullSession(sessionId)
+        setSession(fullSession)
+      }
+      setSessionLoading(false)
+    }
+    loadSession()
+  }, [sessionId, getFullSession])
 
   /* ----- construir estado live ----- */
   const buildLiveExercises = useCallback((): LiveExercise[] => {
-    if (!session) return []
-    return session.exercises.map((we) => {
-      const reps = we.sets.map((s) => s.reps).filter((r): r is number => r !== null)
-      const minR = reps.length ? Math.min(...reps) : 0
-      const maxR = reps.length ? Math.max(...reps) : 0
-      const maxWeight = we.sets.reduce((max, s) => Math.max(max, s.weight ?? 0), 0)
+    if (!session?.exercicios) return []
+    return session.exercicios.map((ex) => {
+      const repRange = ex.repeticoesMin === ex.repeticoesMax 
+        ? `${ex.repeticoesMin}` 
+        : `${ex.repeticoesMin}-${ex.repeticoesMax}`
+      
       return {
-        id: we.id,
-        name: we.exercise.name,
-        setsTarget: `${we.sets.length}x${minR === maxR ? minR : `${minR}-${maxR}`}`,
-        restSeconds: we.restSeconds ?? 60,
-        lastMaxWeight: maxWeight || null,
-        sets: we.sets.map((s) => ({
-          id: s.id,
-          setNumber: s.setNumber,
-          weight: s.weight?.toString() ?? '',
-          reps: s.reps?.toString() ?? '',
+        id: ex.id,
+        name: ex.exercicioNome,
+        setsTarget: `${ex.numSeries}x${repRange}`,
+        restSeconds: ex.descanso,
+        lastMaxWeight: null,
+        sets: Array.from({ length: ex.numSeries }, (_, i) => ({
+          id: `${ex.id}-set-${i}`,
+          setNumber: i + 1,
+          weight: '',
+          reps: '',
           completed: false,
-          lastWeight: s.weight,
-          lastReps: s.reps,
+          lastWeight: null,
+          lastReps: null,
         })),
       }
     })
-  }, [session])
+  }, [session?.exercicios])
 
   const [exercises, setExercises] = useState<LiveExercise[]>([])
   const [currentExIdx, setCurrentExIdx] = useState(0)
@@ -394,7 +385,7 @@ export const ExecuteWorkoutPage = () => {
             <span className="text-sm font-semibold text-white">Resumo da sessão</span>
           </div>
           {[
-            { label: 'Treino', value: session.name },
+            { label: 'Treino', value: session?.nome ?? 'N/A' },
             { label: 'Exercícios concluídos', value: `${completedExercises}/${totalExercises}` },
             { label: 'Séries concluídas', value: `${completedSets}/${totalSets}` },
             { label: 'Maior carga', value: maxWeightSummary },

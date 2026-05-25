@@ -1,14 +1,13 @@
 import type { Exercise } from '../types'
-import { mockExercises } from '../mocks/data'
+import { apiClient } from './api'
 
 export const exerciseService = {
   search: async (query: string): Promise<Exercise[]> => {
-    await new Promise(r => setTimeout(r, 300))
-    const q = query.toLowerCase()
-    return mockExercises.filter(
-      e =>
-        e.name.toLowerCase().includes(q) ||
-        e.muscleGroup.toLowerCase().includes(q)
-    )
+    try {
+      return await apiClient.get<Exercise[]>(`/exercises`)
+    } catch (error) {
+      console.error('Failed to search exercises:', error)
+      return []
+    }
   },
 }

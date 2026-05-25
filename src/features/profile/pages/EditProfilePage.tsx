@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { useAuthStore } from '../../../store/authStore'
-import { fallbackProfile } from '../data/mockProfile'
+
+const fallbackName = 'Usuário'
+const fallbackEmail = 'usuario@email.com'
 
 const headerButtonClass =
   'w-9 h-9 rounded-gj-md bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary transition-colors duration-200 hover:text-white hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2'
@@ -13,13 +15,13 @@ export const EditProfilePage = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const updateProfile = useAuthStore((state) => state.updateProfile)
-  const [name, setName] = useState(user?.name ?? fallbackProfile.name)
-  const [email, setEmail] = useState(user?.email ?? fallbackProfile.email)
+  const [name, setName] = useState(user?.name ?? fallbackName)
+  const [email, setEmail] = useState(user?.email ?? fallbackEmail)
 
   const handleSave = () => {
     updateProfile({
-      name: name.trim() || fallbackProfile.name,
-      email: email.trim() || fallbackProfile.email,
+      name: name.trim() || fallbackName,
+      email: email.trim() || fallbackEmail,
     })
     navigate('/profile')
   }

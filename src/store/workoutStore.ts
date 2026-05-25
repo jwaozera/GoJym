@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { workoutService } from '../services/workoutService'
-import type { WorkoutSession } from '../types'
+import type { WorkoutSession, CreateSessaoTreinoComExerciciosRequestDTO } from '../types'
 
 export interface ActiveExecution {
   sessionId: string
@@ -19,8 +19,9 @@ interface WorkoutState {
   loading: boolean
   activeExecution: ActiveExecution | null
   fetchSessions: () => Promise<void>
+  getFullSession: (sessionId: string) => Promise<WorkoutSession | null>
   createSession: (
-    data: Omit<WorkoutSession, 'id' | 'createdAt'>
+    data: CreateSessaoTreinoComExerciciosRequestDTO
   ) => Promise<WorkoutSession>
   updateSession: (
     id: string,
@@ -32,9 +33,9 @@ interface WorkoutState {
     sessionId: string,
     result: Partial<WorkoutSession>
   ) => Promise<void>
-  startActiveSession: (sessionId: string) => void
+  startActiveSession: (sessionId: string) => Promise<void>
   setActiveExecution: (data: ActiveExecution | null) => void
-  clearActiveExecution: () => void
+  clearActiveExecution: () => Promise<void>
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -58,34 +59,19 @@ export const useWorkoutStore = create<WorkoutState>()(
         }))
       },
 
+      getFullSession: async (sessionId) => {
+        return await workoutService.getSessionById(sessionId)
+      },
+
       createSession: async (data) => {
         const session = await workoutService.createSession(data)
-        if (session.isActive) {
-          workoutService.setActiveSession(session.id)
-        }
         set(state => {
-          const nextSessions = session.isActive
-            ? [
-                ...state.sessions.map(s => ({ ...s, isActive: false })),
-                { ...session, isActive: true },
-              ]
-            : [...state.sessions, session]
-          const totalSets = session.exercises.reduce((total, exercise) => total + exercise.sets.length, 0)
+          const nextSessions = [...state.sessions, session]
+          const totalSets = (session.exercicios?.length ?? 0)
 
           return {
             sessions: nextSessions,
-            activeExecution: session.isActive
-              ? {
-                  sessionId: session.id,
-                  sessionName: session.name,
-                  exerciseCount: session.exercises.length,
-                  completedSets: 0,
-                  totalSets,
-                  currentExIdx: 0,
-                  timerSeconds: 0,
-                  startedAt: new Date().toISOString(),
-                }
-              : state.activeExecution,
+            activeExecution: state.activeExecution,
           }
         })
         return session
@@ -124,8 +110,8 @@ export const useWorkoutStore = create<WorkoutState>()(
         }))
       },
 
-      startActiveSession: (sessionId) => {
-        workoutService.setActiveSession(sessionId)
+      startActiveSession: async (sessionId) => {
+        await workoutService.setActiveSession(sessionId)
         set(state => {
           const session = state.sessions.find(s => s.id === sessionId)
           const totalSets = session?.exercises.reduce((total, exercise) => total + exercise.sets.length, 0) ?? 0
@@ -154,8 +140,8 @@ export const useWorkoutStore = create<WorkoutState>()(
       setActiveExecution: (data) =>
         set({ activeExecution: data }),
 
-      clearActiveExecution: () => {
-        workoutService.clearActiveSession()
+      clearActiveExecution: async () => {
+        await workoutService.clearActiveSession()
         set(state => ({
           sessions: state.sessions.map(s => ({ ...s, isActive: false })),
           activeExecution: null,

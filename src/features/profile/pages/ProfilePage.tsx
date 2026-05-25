@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight, LogOut, Pencil, Trophy, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { useAuthStore } from '../../../store/authStore'
-import { fallbackProfile, profileMeta } from '../data/mockProfile'
+import { profileService } from '../../../services/profileService'
+import { fallbackProfile } from '../data/mockProfile'
 
 const iconButtonClass =
   'w-9 h-9 rounded-gj-md bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary transition-colors duration-200 hover:text-white hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2'
@@ -17,6 +18,15 @@ export const ProfilePage = () => {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const [showLogoutSheet, setShowLogoutSheet] = useState(false)
+  const [profileMeta, setProfileMeta] = useState({ memberSinceLabel: '' })
+
+  useEffect(() => {
+    const fetchProfileMeta = async () => {
+      const meta = await profileService.getProfileMeta()
+      setProfileMeta(meta)
+    }
+    fetchProfileMeta()
+  }, [])
 
   const profileName = formatProfileDisplayName(user?.name ?? fallbackProfile.name)
 
