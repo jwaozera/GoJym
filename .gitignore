@@ -41,6 +41,21 @@ temp/
 *.py
 *.docx
 
-# Ignore local env files (explicit)
-.env.local
-.env.*.local
+# Monorepo frontend/backend ignores
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+backend/target/
+backend/.idea/
+backend/.vscode/
+backend/logs/
+backend/*.log
+backend/*.tmp
+backend/.env
+backend/.env.local
+backend/.env.*.local
+
+# Allow versioned env examples and essential monorepo files
+!.env.example
+!frontend/.env.example
