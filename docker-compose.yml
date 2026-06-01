@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gojym-postgres
+    environment:
+      POSTGRES_DB: gojym
+      POSTGRES_USER: gjuser
+      POSTGRES_PASSWORD: gjpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - gojym_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  gojym_postgres_data:
