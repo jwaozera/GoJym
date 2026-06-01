@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { workoutService } from '../services/workoutService'
-import type { WorkoutSession, CreateSessaoTreinoComExerciciosRequestDTO } from '../types'
+import type { WorkoutSession, CreateSessaoTreinoComExerciciosRequestDTO, UpdateSessaoTreinoComExerciciosRequestDTO } from '../types'
 
 export interface ActiveExecution {
   sessionId: string
+  registroId?: string
   sessionName: string
   exerciseCount: number
   completedSets: number
@@ -25,13 +26,13 @@ interface WorkoutState {
   ) => Promise<WorkoutSession>
   updateSession: (
     id: string,
-    data: Partial<Omit<WorkoutSession, 'id' | 'createdAt'>>
+    data: UpdateSessaoTreinoComExerciciosRequestDTO
   ) => Promise<WorkoutSession | null>
   deleteSession: (id: string) => Promise<boolean>
   addSession: (session: WorkoutSession) => void
   saveExecutionResult: (
-    sessionId: string,
-    result: Partial<WorkoutSession>
+    registroId: string,
+    durationSeconds: number
   ) => Promise<void>
   startActiveSession: (sessionId: string) => Promise<void>
   setActiveExecution: (data: ActiveExecution | null) => void
@@ -67,7 +68,7 @@ export const useWorkoutStore = create<WorkoutState>()(
         const session = await workoutService.createSession(data)
         set(state => {
           const nextSessions = [...state.sessions, session]
-          const totalSets = (session.exercicios?.length ?? 0)
+          const totalSets = (session.exercicios?.length ?? session.exercises?.length ?? 0)
 
           return {
             sessions: nextSessions,
@@ -100,21 +101,29 @@ export const useWorkoutStore = create<WorkoutState>()(
       addSession: (session) =>
         set(state => ({ sessions: [...state.sessions, session] })),
 
-      saveExecutionResult: async (sessionId, result) => {
-        await workoutService.saveExecutionResult(sessionId, result)
+      saveExecutionResult: async (registroId, durationSeconds) => {
+        await workoutService.saveExecutionResult(registroId, durationSeconds)
         set(state => ({
           sessions: state.sessions.map(s =>
-            s.id === sessionId ? { ...s, ...result, isActive: false } : s
+            s.id === state.activeExecution?.sessionId ? { ...s, isActive: false } : s
           ),
           activeExecution: null,
         }))
       },
 
       startActiveSession: async (sessionId) => {
-        await workoutService.setActiveSession(sessionId)
+        const registroId = await workoutService.setActiveSession(sessionId)
+        if (!registroId) {
+          return
+        }
+
         set(state => {
           const session = state.sessions.find(s => s.id === sessionId)
-          const totalSets = session?.exercises.reduce((total, exercise) => total + exercise.sets.length, 0) ?? 0
+          const exercisesList = session ? (session.exercises ?? session.exercicios ?? []) : []
+          const totalSets = exercisesList.reduce((total, exercise) => {
+            const seriesCount = exercise.numSeries ?? exercise.sets?.length ?? 0
+            return total + seriesCount
+          }, 0)
 
           return {
             sessions: state.sessions.map(s => ({
@@ -123,15 +132,16 @@ export const useWorkoutStore = create<WorkoutState>()(
             })),
             activeExecution: session
               ? {
-                  sessionId: session.id,
-                  sessionName: session.name,
-                  exerciseCount: session.exercises.length,
-                  completedSets: 0,
-                  totalSets,
-                  currentExIdx: 0,
-                  timerSeconds: 0,
-                  startedAt: new Date().toISOString(),
-                }
+                sessionId: session.id,
+                registroId,
+                sessionName: session.name ?? session.nome ?? '',
+                exerciseCount: exercisesList.length,
+                completedSets: 0,
+                totalSets,
+                currentExIdx: 0,
+                timerSeconds: 0,
+                startedAt: new Date().toISOString(),
+              }
               : state.activeExecution,
           }
         })
@@ -141,7 +151,6 @@ export const useWorkoutStore = create<WorkoutState>()(
         set({ activeExecution: data }),
 
       clearActiveExecution: async () => {
-        await workoutService.clearActiveSession()
         set(state => ({
           sessions: state.sessions.map(s => ({ ...s, isActive: false })),
           activeExecution: null,

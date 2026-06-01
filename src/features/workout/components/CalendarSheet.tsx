@@ -32,12 +32,15 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
   const workoutDays = useMemo(() => {
     const map = new Map<number, { name: string; exerciseCount: number }[]>()
     sessions.forEach((s) => {
-      if (s.completedAt) {
-        const d = new Date(s.completedAt)
+      const completed = s.completedAt ?? s.createdAt
+      if (completed) {
+        const d = new Date(completed)
         if (d.getFullYear() === year && d.getMonth() === month) {
           const day = d.getDate()
           const existing = map.get(day) || []
-          existing.push({ name: s.name, exerciseCount: s.exercises.length })
+          const name = s.name ?? s.nome ?? 'Sessão'
+          const exerciseCount = (s.exercises?.length ?? s.exercicios?.length) ?? 0
+          existing.push({ name, exerciseCount })
           map.set(day, existing)
         }
       }
@@ -127,23 +130,21 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
               <button
                 key={i}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
-                className={`aspect-square rounded-gj-md flex flex-col items-center justify-center gap-0.5 transition-all duration-150 cursor-pointer ${
-                  isSelected
+                className={`aspect-square rounded-gj-md flex flex-col items-center justify-center gap-0.5 transition-all duration-150 cursor-pointer ${isSelected
                     ? 'bg-gj-accent'
                     : hasWorkout
                       ? 'bg-gj-surface-elevated'
                       : 'hover:bg-white/5'
-                }`}
+                  }`}
               >
-                <span className={`text-xs ${
-                  isSelected
+                <span className={`text-xs ${isSelected
                     ? 'font-bold text-white'
                     : isToday
                       ? 'font-bold text-gj-accent'
                       : hasWorkout
                         ? 'font-normal text-white'
                         : 'font-normal text-gj-text-secondary'
-                }`}>
+                  }`}>
                   {day}
                 </span>
                 {hasWorkout && !isSelected && (

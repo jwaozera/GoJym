@@ -43,11 +43,11 @@ export const WeeklySeriesSheet = ({ isOpen, onClose, data }: WeeklySeriesSheetPr
   const rows = [
     { label: 'Total de séries', value: String(data.totalSeries) },
     { label: 'Total de sessões', value: String(data.totalSessions) },
-    { label: 'Carga total', value: data.totalWeight },
-    { label: 'Tempo total', value: data.totalTime },
+    { label: 'Carga total', value: data.totalWeight || 'Sem dados suficientes' },
+    { label: 'Tempo total', value: data.totalTime || 'Sem dados suficientes' },
     { label: 'Dias ativos', value: String(data.activeDays) },
     { label: 'Média séries/sessão', value: String(data.avgSeriesPerSession) },
-    { label: 'Treino mais frequente', value: data.mostFrequentWorkout },
+    { label: 'Treino mais frequente', value: data.mostFrequentWorkout || 'Sem dados suficientes' },
   ]
 
   return (
@@ -99,9 +99,8 @@ export const WeeklySeriesSheet = ({ isOpen, onClose, data }: WeeklySeriesSheetPr
           {rows.map((row, i) => (
             <div
               key={row.label}
-              className={`flex items-center justify-between py-2.5 ${
-                i < rows.length - 1 ? 'border-b border-gj-border' : ''
-              }`}
+              className={`flex items-center justify-between py-2.5 ${i < rows.length - 1 ? 'border-b border-gj-border' : ''
+                }`}
             >
               <span className="text-xs text-gj-text-secondary">{row.label}</span>
               <span className="text-sm font-semibold text-white">{row.value}</span>

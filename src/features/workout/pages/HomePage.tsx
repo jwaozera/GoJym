@@ -16,44 +16,37 @@ import {
   Equal,
 } from 'lucide-react'
 
-/* ====== Mock data ====== */
+/* ====== Integration mode: neutral week data ====== */
+// Do not present mock metrics as real data. Show neutral/empty values when no real endpoint exists.
 const WEEKLY_DATA = [
-  { day: 'Seg', sets: 10, active: true },
-  { day: 'Ter', sets: 14, active: true },
+  { day: 'Seg', sets: 0, active: false },
+  { day: 'Ter', sets: 0, active: false },
   { day: 'Qua', sets: 0, active: false },
-  { day: 'Qui', sets: 21, active: true },
-  { day: 'Sex', sets: 17, active: true },
-  { day: 'Sáb', sets: 12, active: true },
-  { day: 'Dom', sets: 0, active: false },
-]
-
-const WEEKLY_DATA_PREV = [
-  { day: 'Seg', sets: 16, active: true },
-  { day: 'Ter', sets: 20, active: true },
-  { day: 'Qua', sets: 12, active: true },
   { day: 'Qui', sets: 0, active: false },
-  { day: 'Sex', sets: 18, active: true },
+  { day: 'Sex', sets: 0, active: false },
   { day: 'Sáb', sets: 0, active: false },
   { day: 'Dom', sets: 0, active: false },
 ]
 
+const WEEKLY_DATA_PREV = WEEKLY_DATA
+
 const WEEKLY_STATS = {
-  totalSeries: 92,
-  totalSessions: 4,
-  totalWeight: '8.4t',
-  totalTime: '4h 32min',
-  activeDays: 4,
-  avgSeriesPerSession: 23,
-  mostFrequentWorkout: 'Treino A — Push',
+  totalSeries: 0,
+  totalSessions: 0,
+  totalWeight: '0t',
+  totalTime: '0h 0min',
+  activeDays: 0,
+  avgSeriesPerSession: 0,
+  mostFrequentWorkout: '',
 }
 
 type ComparisonState = 'up' | 'down' | 'equal'
 
 /* submetrica de trends (Sessões, Tempo, Carga total) */
 const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = [
-  { label: 'Sessões', value: '4', comparison: 'down' },
-  { label: 'Tempo', value: '4:32', comparison: 'up' },
-  { label: 'Carga total', value: '8.4t', comparison: 'equal' },
+  { label: 'Sessões', value: '0', comparison: 'equal' },
+  { label: 'Tempo', value: '0', comparison: 'equal' },
+  { label: 'Carga total', value: '0', comparison: 'equal' },
 ]
 
 const comparisonIconStyles: Record<ComparisonState, string> = {
@@ -105,8 +98,8 @@ export const HomePage = () => {
     return `${weekDays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
   }, [])
 
-  // streak (mock: 21 semanas)
-  const streakWeeks = 21
+  // streak: no real endpoint — show neutral value
+  const streakWeeks = 0
 
   // dados do grafico baseado na semana atual/passada
   const chartData = selectedWeek === 'current' ? WEEKLY_DATA : WEEKLY_DATA_PREV
@@ -143,9 +136,8 @@ export const HomePage = () => {
           {SUB_TRENDS.map((metric, i) => (
             <div
               key={metric.label}
-              className={`flex-1 flex flex-col items-center gap-0 ${
-                i === 1 ? 'border-x border-gj-border' : ''
-              }`}
+              className={`flex-1 flex flex-col items-center gap-0 ${i === 1 ? 'border-x border-gj-border' : ''
+                }`}
             >
               <div className="flex h-7 items-center justify-center gap-1.5">
                 <span className="text-xl font-bold text-white leading-7">{metric.value}</span>

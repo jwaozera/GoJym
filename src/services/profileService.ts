@@ -1,5 +1,3 @@
-import { apiClient } from './api'
-
 export interface ExerciseRecord {
   exercise: string
   date: string
@@ -23,23 +21,13 @@ export interface WorkoutRecords {
 
 export const profileService = {
   getWorkoutRecords: async (): Promise<WorkoutRecords[]> => {
-    try {
-      return await apiClient.get<WorkoutRecords[]>('/profile/records')
-    } catch (error) {
-      console.error('Failed to fetch workout records:', error)
-      return []
-    }
+    // No real `/profile/records` endpoint is guaranteed by the Swagger integration.
+    // Per integration mode rules, do not call non-existing endpoints – return empty.
+    return []
   },
 
   getProfileMeta: async (): Promise<{ memberSinceLabel: string; memberSinceFull: string }> => {
-    try {
-      return await apiClient.get<{ memberSinceLabel: string; memberSinceFull: string }>('/profile/meta')
-    } catch (error) {
-      console.error('Failed to fetch profile meta:', error)
-      return {
-        memberSinceLabel: '',
-        memberSinceFull: '',
-      }
-    }
+    // `/profile/meta` is not part of the integrated Swagger contract; return neutral empty values.
+    return { memberSinceLabel: '', memberSinceFull: '' }
   },
 }

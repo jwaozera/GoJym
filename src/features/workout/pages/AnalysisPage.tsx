@@ -13,7 +13,7 @@ interface ExerciseAnalysis {
 const periodOptions: PeriodOption[] = ['Últimas 4 semanas', 'Últimas 8 semanas', 'Últimas 12 semanas', 'Este mês']
 
 const demoAnalysisConfig: { state: 'normal' | 'insufficient' | 'empty' } = {
-  state: 'normal',
+  state: 'empty',
 }
 
 const exerciseOptions: ExerciseAnalysis[] = [
@@ -220,9 +220,9 @@ export const AnalysisPage = () => {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-gj-lg bg-gj-surface-elevated">
             <BarChart3 size={22} className="text-gj-text-secondary" />
           </div>
-          <h2 className="text-base font-semibold text-white leading-[1.5]">Sem dados de análise</h2>
+          <h2 className="text-base font-semibold text-white leading-[1.5]">Sem dados suficientes</h2>
           <p className="mt-2 max-w-[260px] text-sm text-gj-text-secondary leading-[1.43]">
-            Conclua pelo menos uma sessão para ver suas métricas de evolução.
+            Não há dados reais disponíveis no backend para exibir análise.
           </p>
         </Card>
       ) : analysisStatus === 'insufficient' ? (
@@ -275,133 +275,133 @@ export const AnalysisPage = () => {
         </>
       ) : (
         <>
-      <button
-        type="button"
-        onClick={() => setShowExerciseSheet(true)}
-        className="w-full text-left cursor-pointer"
-      >
-        <Card className="!p-4 h-[240px] hover:border-gj-accent/30 transition-colors">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-white leading-[1.43]">
-                {selectedExercise.name}
-              </h2>
-              <p className="text-[10px] text-gj-text-secondary leading-[1.5]">
-                Evolução de carga máxima
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-bold text-gj-success leading-[1.4]">
-                +{evolutionMetrics.progress}%
-              </div>
-              <div className="text-[10px] text-gj-text-secondary leading-[1.5]">
-                {evolutionMetrics.range}
-              </div>
-            </div>
-          </div>
-
-          <div className="h-[128px] rounded-gj-lg bg-gj-bg/50 px-3 py-2">
-            <svg viewBox="0 0 300 112" className="h-full w-full overflow-visible" aria-hidden="true">
-              <path d={linePath} fill="none" stroke="#FF6B35" strokeWidth="2" />
-              {evolutionMetrics.data.map((point, index) => {
-                const x = 18 + index * xStep
-                const y = 100 - ((point.value - minEvolutionValue) / evolutionRange) * 80
-                return (
-                  <circle
-                    key={point.label}
-                    cx={x}
-                    cy={y}
-                    r="5"
-                    fill="#FF6B35"
-                    stroke="#0A0E1A"
-                    strokeWidth="3"
-                  />
-                )
-              })}
-            </svg>
-          </div>
-
-          <div className="flex items-center justify-between px-1 pt-2">
-            {evolutionMetrics.data.map((point) => (
-              <span key={point.label} className="text-[10px] text-gj-text-secondary leading-[1.5]">
-                {point.label}
-              </span>
-            ))}
-          </div>
-        </Card>
-      </button>
-
-      <Card className="!p-4 h-[194px]">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-white leading-[1.43]">Ritmo no período</h2>
-          </div>
-          <p className="mb-3">
-            <span className="text-xl font-bold text-white leading-[1.4]">
-              {rhythmData.reduce((total, item) => total + item.sets, 0)}{' '}
-            </span>
-            <span className="text-xs text-gj-text-secondary leading-[1.33]">séries totais</span>
-          </p>
-
-          <div className="flex h-[102px] items-end justify-between gap-2">
-            {rhythmData.map((item) => (
-              <div key={item.label} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.sets}</span>
-                <div className="flex h-[64px] w-full items-end justify-center">
-                  <div
-                    className="w-full max-w-[28px] rounded-[10px]"
-                    style={{
-                      height: `${Math.max((item.sets / maxSets) * 64, 24)}px`,
-                      background: 'linear-gradient(0deg, #FF6B35 0%, #FF8F5E 100%)',
-                    }}
-                  />
+          <button
+            type="button"
+            onClick={() => setShowExerciseSheet(true)}
+            className="w-full text-left cursor-pointer"
+          >
+            <Card className="!p-4 h-[240px] hover:border-gj-accent/30 transition-colors">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-white leading-[1.43]">
+                    {selectedExercise.name}
+                  </h2>
+                  <p className="text-[10px] text-gj-text-secondary leading-[1.5]">
+                    Evolução de carga máxima
+                  </p>
                 </div>
-                <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.label}</span>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-gj-success leading-[1.4]">
+                    +{evolutionMetrics.progress}%
+                  </div>
+                  <div className="text-[10px] text-gj-text-secondary leading-[1.5]">
+                    {evolutionMetrics.range}
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </Card>
 
-      <button
-        type="button"
-        onClick={() => setShowSummarySheet(true)}
-        className="group w-full text-left cursor-pointer"
-      >
-        <Card className="!p-4 group-hover:border-gj-accent/30 group-focus-visible:border-gj-accent/30 transition-colors">
-          <h2 className="mb-4 text-sm font-semibold text-white leading-[1.43]">Resumo do período</h2>
-          <div className="grid grid-cols-3">
-            {summaryRows.slice(0, 3).map((metric) => (
-              <div key={metric.label} className="flex flex-col items-center">
-                <span className="text-xl font-bold text-white leading-[1.4]">{metric.value}</span>
-                <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{metric.label}</span>
+              <div className="h-[128px] rounded-gj-lg bg-gj-bg/50 px-3 py-2">
+                <svg viewBox="0 0 300 112" className="h-full w-full overflow-visible" aria-hidden="true">
+                  <path d={linePath} fill="none" stroke="#FF6B35" strokeWidth="2" />
+                  {evolutionMetrics.data.map((point, index) => {
+                    const x = 18 + index * xStep
+                    const y = 100 - ((point.value - minEvolutionValue) / evolutionRange) * 80
+                    return (
+                      <circle
+                        key={point.label}
+                        cx={x}
+                        cy={y}
+                        r="5"
+                        fill="#FF6B35"
+                        stroke="#0A0E1A"
+                        strokeWidth="3"
+                      />
+                    )
+                  })}
+                </svg>
               </div>
-            ))}
-          </div>
-        </Card>
-      </button>
 
-      <Card className="!p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white leading-[1.43]">Destaques do período</h2>
-          <Medal size={16} className="text-gj-accent" />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          {highlights.map((item) => (
-            <div
-              key={item.name}
-              className="flex items-center justify-between rounded-gj-md bg-gj-surface-elevated px-3 py-3"
-            >
-              <div>
-                <h3 className="text-sm font-normal text-white leading-[1.43]">{item.name}</h3>
-                <p className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.range}</p>
+              <div className="flex items-center justify-between px-1 pt-2">
+                {evolutionMetrics.data.map((point) => (
+                  <span key={point.label} className="text-[10px] text-gj-text-secondary leading-[1.5]">
+                    {point.label}
+                  </span>
+                ))}
               </div>
-              <span className="text-sm font-semibold text-gj-success leading-[1.43]">
-                {item.progress}
-              </span>
+            </Card>
+          </button>
+
+          <Card className="!p-4 h-[194px]">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-sm font-semibold text-white leading-[1.43]">Ritmo no período</h2>
             </div>
-          ))}
-        </div>
-      </Card>
+            <p className="mb-3">
+              <span className="text-xl font-bold text-white leading-[1.4]">
+                {rhythmData.reduce((total, item) => total + item.sets, 0)}{' '}
+              </span>
+              <span className="text-xs text-gj-text-secondary leading-[1.33]">séries totais</span>
+            </p>
+
+            <div className="flex h-[102px] items-end justify-between gap-2">
+              {rhythmData.map((item) => (
+                <div key={item.label} className="flex flex-1 flex-col items-center gap-1">
+                  <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.sets}</span>
+                  <div className="flex h-[64px] w-full items-end justify-center">
+                    <div
+                      className="w-full max-w-[28px] rounded-[10px]"
+                      style={{
+                        height: `${Math.max((item.sets / maxSets) * 64, 24)}px`,
+                        background: 'linear-gradient(0deg, #FF6B35 0%, #FF8F5E 100%)',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <button
+            type="button"
+            onClick={() => setShowSummarySheet(true)}
+            className="group w-full text-left cursor-pointer"
+          >
+            <Card className="!p-4 group-hover:border-gj-accent/30 group-focus-visible:border-gj-accent/30 transition-colors">
+              <h2 className="mb-4 text-sm font-semibold text-white leading-[1.43]">Resumo do período</h2>
+              <div className="grid grid-cols-3">
+                {summaryRows.slice(0, 3).map((metric) => (
+                  <div key={metric.label} className="flex flex-col items-center">
+                    <span className="text-xl font-bold text-white leading-[1.4]">{metric.value}</span>
+                    <span className="text-[10px] text-gj-text-secondary leading-[1.5]">{metric.label}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </button>
+
+          <Card className="!p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-white leading-[1.43]">Destaques do período</h2>
+              <Medal size={16} className="text-gj-accent" />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {highlights.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between rounded-gj-md bg-gj-surface-elevated px-3 py-3"
+                >
+                  <div>
+                    <h3 className="text-sm font-normal text-white leading-[1.43]">{item.name}</h3>
+                    <p className="text-[10px] text-gj-text-secondary leading-[1.5]">{item.range}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-gj-success leading-[1.43]">
+                    {item.progress}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
         </>
       )}
 
@@ -428,11 +428,10 @@ export const AnalysisPage = () => {
                         setSelectedPeriod(period)
                         setShowPeriodSheet(false)
                       }}
-                      className={`flex h-12 items-center justify-between rounded-gj-lg border px-4 text-sm transition-all cursor-pointer ${
-                        isSelected
+                      className={`flex h-12 items-center justify-between rounded-gj-lg border px-4 text-sm transition-all cursor-pointer ${isSelected
                           ? 'bg-gj-accent-soft border-gj-accent text-gj-accent font-semibold'
                           : 'bg-gj-surface-elevated border-gj-border text-white hover:bg-white/10'
-                      }`}
+                        }`}
                     >
                       <span>{period}</span>
                       {isSelected && <Check size={16} />}
@@ -481,11 +480,10 @@ export const AnalysisPage = () => {
                         setExerciseSearch('')
                         setShowExerciseSheet(false)
                       }}
-                      className={`flex h-14 items-center justify-between rounded-gj-lg border px-4 text-left transition-all cursor-pointer ${
-                        isSelected
+                      className={`flex h-14 items-center justify-between rounded-gj-lg border px-4 text-left transition-all cursor-pointer ${isSelected
                           ? 'bg-gj-accent-soft border-gj-accent'
                           : 'bg-gj-surface-elevated border-gj-border hover:bg-white/10'
-                      }`}
+                        }`}
                     >
                       <span className="flex min-w-0 flex-col">
                         <span className={`truncate text-sm font-semibold ${isSelected ? 'text-gj-accent' : 'text-white'}`}>

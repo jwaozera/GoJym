@@ -1,4 +1,12 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import type { WorkoutSession } from '../../../types'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useTimer } from '../../../hooks/useTimer'
+import { useWorkoutStore } from '../../../store/workoutStore'
+import { workoutService } from '../../../services/workoutService'
+import { X, CheckCircle, Trophy, Award, Dumbbell, Clock, Flame, ChevronLeft, ChevronRight } from 'lucide-react'
+import { SetInputRow } from '../components/SetInputRow'
+import { RestTimer } from '../components/RestTimer'
 
 /* ====== tipos internos ====== */
 interface LiveSet {
@@ -29,7 +37,7 @@ export const ExecuteWorkoutPage = () => {
   const navigate = useNavigate()
   const timer = useTimer()
 
-  const { getFullSession, clearActiveExecution } = useWorkoutStore()
+  const { getFullSession, clearActiveExecution, activeExecution, saveExecutionResult } = useWorkoutStore()
   const [session, setSession] = useState<WorkoutSession | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
 
@@ -46,19 +54,22 @@ export const ExecuteWorkoutPage = () => {
 
   /* ----- construir estado live ----- */
   const buildLiveExercises = useCallback((): LiveExercise[] => {
-    if (!session?.exercicios) return []
-    return session.exercicios.map((ex) => {
-      const repRange = ex.repeticoesMin === ex.repeticoesMax 
-        ? `${ex.repeticoesMin}` 
-        : `${ex.repeticoesMin}-${ex.repeticoesMax}`
-      
+    if (!session) return []
+    const src = session.exercicios ?? session.exercises ?? []
+    return src.map((ex) => {
+      const repMin = ex.repeticoesMin ?? ex.repeticoesMin ?? 8
+      const repMax = ex.repeticoesMax ?? ex.repeticoesMax ?? repMin
+      const repRange = repMin === repMax ? `${repMin}` : `${repMin}-${repMax}`
+      const numSeries = ex.numSeries ?? ex.numSeries ?? 3
+      const rest = ex.descanso ?? 60
+
       return {
         id: ex.id,
-        name: ex.exercicioNome,
-        setsTarget: `${ex.numSeries}x${repRange}`,
-        restSeconds: ex.descanso,
+        name: ex.exercicioNome ?? ex.exercicio?.nome ?? 'Exercício',
+        setsTarget: `${numSeries}x${repRange}`,
+        restSeconds: rest,
         lastMaxWeight: null,
-        sets: Array.from({ length: ex.numSeries }, (_, i) => ({
+        sets: Array.from({ length: numSeries }, (_, i) => ({
           id: `${ex.id}-set-${i}`,
           setNumber: i + 1,
           weight: '',
@@ -69,7 +80,7 @@ export const ExecuteWorkoutPage = () => {
         })),
       }
     })
-  }, [session?.exercicios])
+  }, [session])
 
   const [exercises, setExercises] = useState<LiveExercise[]>([])
   const [currentExIdx, setCurrentExIdx] = useState(0)
@@ -133,9 +144,9 @@ export const ExecuteWorkoutPage = () => {
       prev.map((ex) =>
         ex.id === currentEx.id
           ? {
-              ...ex,
-              sets: ex.sets.map((s) => (s.id === setId ? { ...s, weight: value } : s)),
-            }
+            ...ex,
+            sets: ex.sets.map((s) => (s.id === setId ? { ...s, weight: value } : s)),
+          }
           : ex
       )
     )
@@ -146,9 +157,9 @@ export const ExecuteWorkoutPage = () => {
       prev.map((ex) =>
         ex.id === currentEx.id
           ? {
-              ...ex,
-              sets: ex.sets.map((s) => (s.id === setId ? { ...s, reps: value } : s)),
-            }
+            ...ex,
+            sets: ex.sets.map((s) => (s.id === setId ? { ...s, reps: value } : s)),
+          }
           : ex
       )
     )
@@ -163,11 +174,11 @@ export const ExecuteWorkoutPage = () => {
         prev.map((ex) =>
           ex.id === currentEx.id
             ? {
-                ...ex,
-                sets: ex.sets.map((s) =>
-                  s.id === setId ? { ...s, completed: false } : s
-                ),
-              }
+              ...ex,
+              sets: ex.sets.map((s) =>
+                s.id === setId ? { ...s, completed: false } : s
+              ),
+            }
             : ex
         )
       )
@@ -175,28 +186,35 @@ export const ExecuteWorkoutPage = () => {
       return
     }
 
-    // Marcar como concluída e calcular próxima série
+    const currentExercise = session?.exercicios?.find((ex) => ex.id === currentEx.id)
+      ?? session?.exercises?.find((ex) => ex.id === currentEx.id)
+
+    const idExercicio = currentExercise?.exercicioId
+    if (activeExecution?.registroId && currentExercise && targetSet) {
+      if (typeof idExercicio !== 'number' || Number.isNaN(idExercicio)) {
+        throw new Error('Invalid exercicioId: cannot register serie without a valid backend exercise id')
+      }
+    }
+
     setExercises((prev) => {
       const updated = prev.map((ex) =>
         ex.id === currentEx.id
           ? {
-              ...ex,
-              sets: ex.sets.map((s) =>
-                s.id === setId ? { ...s, completed: true } : s
-              ),
-            }
+            ...ex,
+            sets: ex.sets.map((s) =>
+              s.id === setId ? { ...s, completed: true } : s
+            ),
+          }
           : ex
       )
 
-      // Achatar todas as séries em ordem para encontrar a próxima
       const allSets = updated.flatMap((ex) =>
         ex.sets.map((s) => ({ ...s, exerciseId: ex.id }))
       )
       const currentIdx = allSets.findIndex((s) => s.id === setId)
       const next = allSets.slice(currentIdx + 1).find((s) => !s.completed)
 
-      // Agendar side-effects fora do setState
-      queueMicrotask(() => {
+      queueMicrotask(async () => {
         if (next) {
           const parentExIdx = updated.findIndex((ex) =>
             ex.sets.some((s) => s.id === next.id)
@@ -207,8 +225,16 @@ export const ExecuteWorkoutPage = () => {
           setActiveSetId(next.id)
           setShowRestTimer(true)
         } else {
-          // Todas as séries concluídas
           setActiveSetId(null)
+        }
+
+        if (activeExecution?.registroId && currentExercise && targetSet) {
+          await workoutService.createRegistroSerie(activeExecution.registroId, {
+            idExercicio: idExercicio as number,
+            numeroSerie: targetSet.setNumber,
+            carga: parseFloat(targetSet.weight) || 0,
+            repeticoes: parseInt(targetSet.reps) || 0,
+          })
         }
       })
 
@@ -216,8 +242,11 @@ export const ExecuteWorkoutPage = () => {
     })
   }
 
-  const handleFinishWorkout = () => {
+  const handleFinishWorkout = async () => {
     timer.pause()
+    if (activeExecution?.registroId) {
+      await saveExecutionResult(activeExecution.registroId, timer.seconds)
+    }
     clearActiveExecution()
     setSummaryMode('completed')
     setView('summary')
@@ -231,9 +260,12 @@ export const ExecuteWorkoutPage = () => {
     setShowEndSheet(false)
   }
 
-  const handleEndSheetFinish = () => {
+  const handleEndSheetFinish = async () => {
     setShowEndSheet(false)
     timer.pause()
+    if (activeExecution?.registroId) {
+      await saveExecutionResult(activeExecution.registroId, timer.seconds)
+    }
     clearActiveExecution()
     setSummaryMode('partial')
     setView('summary')
@@ -302,23 +334,16 @@ export const ExecuteWorkoutPage = () => {
     const summaryHighlights = isPartialSummary
       ? []
       : [
-          ...(maxWeightSet.weight > 0
-            ? [{
-                type: 'record' as const,
-                icon: <Trophy size={18} className="text-gj-accent shrink-0" />,
-                title: 'Novo recorde pessoal',
-                description: `${maxExName} — ${maxWeightSet.weight}kg × ${maxWeightSet.reps} reps`,
-                className: 'bg-gj-accent/5 border-gj-accent/15',
-              }]
-            : []),
-          {
-            type: 'streak' as const,
-            icon: <Award size={18} className="text-gj-success shrink-0" />,
-            title: 'Streak de 4 sessões',
-            description: 'Você está consistente. Continue assim!',
-            className: 'bg-gj-success/5 border-gj-success/15',
-          },
-        ]
+        ...(maxWeightSet.weight > 0
+          ? [{
+            type: 'record' as const,
+            icon: <Trophy size={18} className="text-gj-accent shrink-0" />,
+            title: 'Novo recorde pessoal',
+            description: `${maxExName} — ${maxWeightSet.weight}kg × ${maxWeightSet.reps} reps`,
+            className: 'bg-gj-accent/5 border-gj-accent/15',
+          }]
+          : []),
+      ]
 
     return (
       <div
@@ -393,9 +418,8 @@ export const ExecuteWorkoutPage = () => {
           ].map((row, i, arr) => (
             <div
               key={row.label}
-              className={`flex items-center justify-between px-4 py-3 ${
-                i < arr.length - 1 ? 'border-b border-gj-border' : ''
-              }`}
+              className={`flex items-center justify-between px-4 py-3 ${i < arr.length - 1 ? 'border-b border-gj-border' : ''
+                }`}
             >
               <span className="text-xs text-gj-text-secondary">{row.label}</span>
               <span className="text-sm font-semibold text-white">{row.value}</span>

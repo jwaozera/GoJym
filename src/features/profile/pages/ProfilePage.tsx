@@ -29,6 +29,7 @@ export const ProfilePage = () => {
   }, [])
 
   const profileName = formatProfileDisplayName(user?.name ?? fallbackProfile.name)
+  const memberSinceLabel = profileMeta.memberSinceLabel || 'Sem dados suficientes'
 
   const handleConfirmLogout = () => {
     logout()
@@ -50,7 +51,9 @@ export const ProfilePage = () => {
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-lg font-bold leading-[1.25]">{profileName}</h2>
             <p className="mt-1 text-sm text-gj-text-secondary">
-              Membro desde {profileMeta.memberSinceLabel}
+              {memberSinceLabel === 'Sem dados suficientes'
+                ? memberSinceLabel
+                : `Membro desde ${memberSinceLabel}`}
             </p>
           </div>
 

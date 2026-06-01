@@ -56,73 +56,84 @@ export const PersonalRecordsPage = () => {
   return (
     <div className="min-h-screen bg-gj-background text-gj-text-primary">
       <div className="mx-auto min-h-screen max-w-[430px] overflow-x-hidden">
-      <header className="border-b border-gj-border px-5 pb-4 pt-14">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className={headerButtonClass}
-            onClick={() => navigate('/profile')}
-            aria-label="Voltar"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="min-w-0 flex-1 text-xl font-bold leading-[1.25]">Recordes pessoais</h1>
-        </div>
-      </header>
+        <header className="border-b border-gj-border px-5 pb-4 pt-14">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className={headerButtonClass}
+              onClick={() => navigate('/profile')}
+              aria-label="Voltar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="min-w-0 flex-1 text-xl font-bold leading-[1.25]">Recordes pessoais</h1>
+          </div>
+        </header>
 
-      <main className="px-5 pb-8 pt-6">
-        <button
-          type="button"
-          onClick={() => setShowWorkoutSheet(true)}
-          className="mb-7 flex h-11 w-full items-center justify-between rounded-gj-lg border border-gj-border bg-gj-surface-elevated px-4 text-left transition-colors duration-200 hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2"
-        >
-          <span className="truncate text-sm font-semibold">{selectedWorkout?.name}</span>
-          <ChevronDown size={18} className="shrink-0 text-gj-text-secondary" />
-        </button>
+        <main className="px-5 pb-8 pt-6">
+          {workoutRecords.length === 0 ? (
+            <Card className="!p-6 text-center">
+              <p className="text-base font-semibold text-white">Sem dados suficientes</p>
+              <p className="mt-2 text-sm text-gj-text-secondary">
+                Não há registros de recordes pessoais disponíveis no backend.
+              </p>
+            </Card>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowWorkoutSheet(true)}
+                className="mb-7 flex h-11 w-full items-center justify-between rounded-gj-lg border border-gj-border bg-gj-surface-elevated px-4 text-left transition-colors duration-200 hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2"
+              >
+                <span className="truncate text-sm font-semibold">{selectedWorkout?.name}</span>
+                <ChevronDown size={18} className="shrink-0 text-gj-text-secondary" />
+              </button>
 
-        <section>
-          <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes por exercício</h2>
-          <div className="space-y-3">
-            {selectedWorkout?.exerciseRecords.map((record) => (
-              <Card key={`${record.exercise}-${record.date}`} className="bg-gj-surface-elevated/50">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold leading-[1.35]">{record.exercise}</p>
-                    <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
-                  </div>
-                  <p className="shrink-0 text-sm font-bold text-gj-accent">
-                    {record.weightKg}kg x {record.reps} reps
-                  </p>
+              <section>
+                <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes por exercício</h2>
+                <div className="space-y-3">
+                  {selectedWorkout?.exerciseRecords.map((record) => (
+                    <Card key={`${record.exercise}-${record.date}`} className="bg-gj-surface-elevated/50">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold leading-[1.35]">{record.exercise}</p>
+                          <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
+                        </div>
+                        <p className="shrink-0 text-sm font-bold text-gj-accent">
+                          {record.weightKg}kg x {record.reps} reps
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              </Card>
-            ))}
-          </div>
-        </section>
+              </section>
 
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes de sessão</h2>
-          <div className="space-y-3">
-            {selectedWorkout?.sessionRecords.map((record) => {
-              const Icon = sessionIconMap[record.icon]
+              <section className="mt-8">
+                <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes de sessão</h2>
+                <div className="space-y-3">
+                  {selectedWorkout?.sessionRecords.map((record) => {
+                    const Icon = sessionIconMap[record.icon]
 
-              return (
-                <Card key={record.label} className="bg-gj-surface-elevated/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-gj-md bg-gj-accent-soft text-gj-accent">
-                      <Icon size={20} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold leading-[1.35]">{record.label}</p>
-                      <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
-                    </div>
-                    <p className="shrink-0 text-sm font-bold text-gj-accent">{record.value}</p>
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
-        </section>
-      </main>
+                    return (
+                      <Card key={record.label} className="bg-gj-surface-elevated/50">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-gj-md bg-gj-accent-soft text-gj-accent">
+                            <Icon size={20} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold leading-[1.35]">{record.label}</p>
+                            <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
+                          </div>
+                          <p className="shrink-0 text-sm font-bold text-gj-accent">{record.value}</p>
+                        </div>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </section>
+            </>
+          )}
+        </main>
 
       </div>
 
@@ -147,11 +158,10 @@ export const PersonalRecordsPage = () => {
                       key={workout.id}
                       type="button"
                       onClick={() => handleSelectWorkout(workout.id)}
-                      className={`flex h-12 w-full items-center justify-between rounded-gj-md border px-4 text-left transition-colors duration-200 ${
-                        selected
+                      className={`flex h-12 w-full items-center justify-between rounded-gj-md border px-4 text-left transition-colors duration-200 ${selected
                           ? 'border-gj-accent bg-gj-accent-soft text-gj-accent'
                           : 'border-gj-border bg-gj-surface-elevated text-gj-text-primary hover:border-gj-accent/70'
-                      }`}
+                        }`}
                     >
                       <span className="text-sm font-semibold">{workout.name}</span>
                       {selected && <Check size={18} />}

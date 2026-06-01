@@ -6,6 +6,13 @@ export interface Usuario {
   createdAt: string
 }
 
+// Compatibilidade com nomenclatura usada no front
+export interface User {
+  id: string
+  name: string
+  email: string
+}
+
 export interface UsuarioRegistro extends Omit<Usuario, 'id' | 'createdAt'> {
   senha: string
 }
@@ -16,7 +23,7 @@ export interface Exercicio {
   nome: string
 }
 
-export interface ExercicioDTO extends Exercicio {}
+export interface ExercicioDTO extends Exercicio { }
 
 export interface ExercicioRequestDTO {
   nome: string
@@ -33,7 +40,7 @@ export interface SessaoTreino {
   qtdExercicios?: number
 }
 
-export interface SessaoTreinoDTO extends SessaoTreino {}
+export interface SessaoTreinoDTO extends SessaoTreino { }
 
 export interface CreateSessaoTreinoRequestDTO {
   nome: string
@@ -92,7 +99,7 @@ export interface SessaoExercicio {
   descanso: number
 }
 
-export interface SessaoExercicioResponseDTO extends SessaoExercicio {}
+export interface SessaoExercicioResponseDTO extends SessaoExercicio { }
 
 export interface SessaoExercicioRequestDTO {
   exercicioId: number
@@ -103,7 +110,7 @@ export interface SessaoExercicioRequestDTO {
   descanso?: number
 }
 
-export interface EditSessaoExercicioRequestDTO extends SessaoExercicioRequestDTO {}
+export interface EditSessaoExercicioRequestDTO extends SessaoExercicioRequestDTO { }
 
 // ===== Sessão de Treino Especificada (com exercícios) =====
 export interface SessaoTreinoEspDTO {
@@ -155,21 +162,47 @@ export interface RecordeSessao {
 export interface Set {
   id: string
   setNumber: number
-  weight: number | null
-  reps: number | null
+  // weight/reps podem ser strings vindas da UI ou números; aceitar ambos
+  weight: string | number | null
+  reps: string | number | null
   completed: boolean
 }
 
 export interface WorkoutExercise {
   id: string
   exercicio: Exercicio
+  // Compatibilidade com formato usado nas telas
+  exercicioId?: number
+  exercicioNome?: string
+  numSeries?: number
+  repeticoesMin?: number
+  repeticoesMax?: number
+  ordem?: number
   sets: Set[]
   descanso?: number
 }
 
-export interface ExercicioSessao extends SessaoExercicio {}
+export interface ExercicioSessao extends SessaoExercicio { }
 
-export interface WorkoutSession extends SessaoTreino {}
+export interface WorkoutSession extends SessaoTreino {
+  // Compatibilidade temporária entre campos em português e inglês
+  // Nome do treino
+  name?: string
+  // Alias em português já existe via `nome` em SessaoTreino
+
+  // Lista de exercícios — suportar ambos os formatos usados nas telas
+  exercises?: WorkoutExercise[]
+  exercicios?: WorkoutExercise[]
+
+  // Data de conclusão (ISO string)
+  completedAt?: string | null
+
+  // Flag de sessão ativa
+  isActive?: boolean
+
+  // Quantidade de exercícios (compatibilidade)
+  qtdExercicios?: number
+}
 
 // ===== Auth =====
 export interface AuthDTO {

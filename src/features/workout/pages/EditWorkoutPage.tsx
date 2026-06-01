@@ -112,13 +112,13 @@ export const EditWorkoutPage = () => {
       name: session.nome,
       exercises: session.exercicios.map((ex) => ({
         id: ex.id,
-        exercise: { id: ex.exercicioId, nome: ex.exercicioNome } as Exercise,
-        exercicioId: ex.exercicioId,
-        sets: String(ex.numSeries),
-        reps: ex.repeticoesMin === ex.repeticoesMax 
-          ? String(ex.repeticoesMin) 
-          : `${ex.repeticoesMin}-${ex.repeticoesMax}`,
-        rest: `${ex.descanso}s`,
+        exercise: { id: ex.exercicioId ?? ex.exercicio?.id ?? 0, nome: ex.exercicioNome ?? ex.exercicio?.nome ?? '' } as Exercise,
+        exercicioId: ex.exercicioId ?? ex.exercicio?.id ?? 0,
+        sets: String(ex.numSeries ?? 3),
+        reps: (ex.repeticoesMin ?? 8) === (ex.repeticoesMax ?? 8)
+          ? String(ex.repeticoesMin ?? 8)
+          : `${ex.repeticoesMin ?? 8}-${ex.repeticoesMax ?? 8}`,
+        rest: `${ex.descanso ?? 60}s`,
       })),
     }
   }
@@ -353,9 +353,8 @@ export const EditWorkoutPage = () => {
       {/* ===== TOAST ===== */}
       {toast.show && (
         <div
-          className={`fixed top-14 left-1/2 -translate-x-1/2 z-[70] w-[calc(100%-40px)] max-w-[390px] flex items-center gap-3 p-4 rounded-gj-lg bg-gj-surface border border-gj-success/30 shadow-lg shadow-gj-success/10 ${
-            toast.leaving ? 'animate-toast-out' : 'animate-toast-in'
-          }`}
+          className={`fixed top-14 left-1/2 -translate-x-1/2 z-[70] w-[calc(100%-40px)] max-w-[390px] flex items-center gap-3 p-4 rounded-gj-lg bg-gj-surface border border-gj-success/30 shadow-lg shadow-gj-success/10 ${toast.leaving ? 'animate-toast-out' : 'animate-toast-in'
+            }`}
         >
           <CheckCircle size={18} className="text-gj-success shrink-0" />
           <span className="text-sm font-medium text-white">

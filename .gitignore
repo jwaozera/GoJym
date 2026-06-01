@@ -40,3 +40,7 @@ temp/
 *.txt
 *.py
 *.docx
+
+# Ignore local env files (explicit)
+.env.local
+.env.*.local
