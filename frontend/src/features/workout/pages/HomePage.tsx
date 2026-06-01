@@ -5,6 +5,13 @@ import { Card } from '../../../components/ui'
 import { CalendarSheet } from '../components/CalendarSheet'
 import { WeeklySeriesSheet } from '../components/WeeklySeriesSheet'
 import { DailySeriesSheet } from '../components/DailySeriesSheet'
+import { DATA_SOURCE } from '../../../services/api'
+import {
+  WEEKLY_DATA as MOCK_WEEKLY_DATA,
+  WEEKLY_DATA_PREV as MOCK_WEEKLY_DATA_PREV,
+  WEEKLY_STATS as MOCK_WEEKLY_STATS,
+  STREAK_WEEKS as MOCK_STREAK_WEEKS,
+} from '../../../mocks/data'
 import {
   Calendar,
   TrendingUp,
@@ -16,9 +23,9 @@ import {
   Equal,
 } from 'lucide-react'
 
-/* ====== Integration mode: neutral week data ====== */
-// Do not present mock metrics as real data. Show neutral/empty values when no real endpoint exists.
-const WEEKLY_DATA = [
+/* ====== API mode: neutral week data (empty) ====== */
+/* ====== Mock mode: pre-loaded Vercel preview data ====== */
+const WEEKLY_DATA = DATA_SOURCE === 'mock' ? MOCK_WEEKLY_DATA : [
   { day: 'Seg', sets: 0, active: false },
   { day: 'Ter', sets: 0, active: false },
   { day: 'Qua', sets: 0, active: false },
@@ -28,9 +35,17 @@ const WEEKLY_DATA = [
   { day: 'Dom', sets: 0, active: false },
 ]
 
-const WEEKLY_DATA_PREV = WEEKLY_DATA
+const WEEKLY_DATA_PREV = DATA_SOURCE === 'mock' ? MOCK_WEEKLY_DATA_PREV : [
+  { day: 'Seg', sets: 0, active: false },
+  { day: 'Ter', sets: 0, active: false },
+  { day: 'Qua', sets: 0, active: false },
+  { day: 'Qui', sets: 0, active: false },
+  { day: 'Sex', sets: 0, active: false },
+  { day: 'Sáb', sets: 0, active: false },
+  { day: 'Dom', sets: 0, active: false },
+]
 
-const WEEKLY_STATS = {
+const WEEKLY_STATS = DATA_SOURCE === 'mock' ? MOCK_WEEKLY_STATS : {
   totalSeries: 0,
   totalSessions: 0,
   totalWeight: '0t',
@@ -40,10 +55,16 @@ const WEEKLY_STATS = {
   mostFrequentWorkout: '',
 }
 
+const STREAK_WEEKS = DATA_SOURCE === 'mock' ? MOCK_STREAK_WEEKS : 0
+
 type ComparisonState = 'up' | 'down' | 'equal'
 
 /* submetrica de trends (Sessões, Tempo, Carga total) */
-const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = [
+const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = DATA_SOURCE === 'mock' ? [
+  { label: 'Sessões', value: '4', comparison: 'down' },
+  { label: 'Tempo', value: '4:32', comparison: 'up' },
+  { label: 'Carga total', value: '8.4t', comparison: 'equal' },
+] : [
   { label: 'Sessões', value: '0', comparison: 'equal' },
   { label: 'Tempo', value: '0', comparison: 'equal' },
   { label: 'Carga total', value: '0', comparison: 'equal' },
@@ -98,8 +119,8 @@ export const HomePage = () => {
     return `${weekDays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
   }, [])
 
-  // streak: no real endpoint — show neutral value
-  const streakWeeks = 0
+  // streak (mock: 21 semanas)
+  const streakWeeks = STREAK_WEEKS
 
   // dados do grafico baseado na semana atual/passada
   const chartData = selectedWeek === 'current' ? WEEKLY_DATA : WEEKLY_DATA_PREV

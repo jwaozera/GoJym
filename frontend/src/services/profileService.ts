@@ -1,33 +1,22 @@
-export interface ExerciseRecord {
-  exercise: string
-  date: string
-  weightKg: number
-  reps: number
-}
+import { DATA_SOURCE } from './api'
+import { profileApiService, type ExerciseRecord, type SessionRecord, type WorkoutRecords } from './profileApiService'
+import { profileMockService } from './profileMockService'
 
-export interface SessionRecord {
-  label: string
-  date: string
-  value: string
-  icon: 'load' | 'sets' | 'duration'
-}
+export type { ExerciseRecord, SessionRecord, WorkoutRecords }
 
-export interface WorkoutRecords {
-  id: string
-  name: string
-  exerciseRecords: ExerciseRecord[]
-  sessionRecords: SessionRecord[]
+/**
+ * Unified profile service that routes to API or Mock based on DATA_SOURCE
+ */
+const getCurrentService = () => {
+  return DATA_SOURCE === 'mock' ? profileMockService : profileApiService
 }
 
 export const profileService = {
-  getWorkoutRecords: async (): Promise<WorkoutRecords[]> => {
-    // No real `/profile/records` endpoint is guaranteed by the Swagger integration.
-    // Per integration mode rules, do not call non-existing endpoints – return empty.
-    return []
+  async getWorkoutRecords() {
+    return getCurrentService().getWorkoutRecords()
   },
 
-  getProfileMeta: async (): Promise<{ memberSinceLabel: string; memberSinceFull: string }> => {
-    // `/profile/meta` is not part of the integrated Swagger contract; return neutral empty values.
-    return { memberSinceLabel: '', memberSinceFull: '' }
+  async getProfileMeta() {
+    return getCurrentService().getProfileMeta()
   },
 }

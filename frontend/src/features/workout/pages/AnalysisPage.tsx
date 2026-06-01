@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, Check, ChevronDown, Info, Medal, Search } from 'lucide-react'
 import { Card } from '../../../components/ui'
-
-type PeriodOption = 'Últimas 4 semanas' | 'Últimas 8 semanas' | 'Últimas 12 semanas' | 'Este mês'
+import { DATA_SOURCE } from '../../../services/api'
+import {
+  EXERCISE_OPTIONS as MOCK_EXERCISE_OPTIONS,
+  RHYTHM_BY_WEEK as MOCK_RHYTHM_BY_WEEK,
+  PERIOD_META as MOCK_PERIOD_META,
+  type PeriodOption,
+  type ExerciseAnalysisData,
+} from '../../../mocks/data'
 
 interface ExerciseAnalysis {
   name: string
@@ -12,24 +18,28 @@ interface ExerciseAnalysis {
 
 const periodOptions: PeriodOption[] = ['Últimas 4 semanas', 'Últimas 8 semanas', 'Últimas 12 semanas', 'Este mês']
 
+// Show mock data in mock mode, empty state in API mode
 const demoAnalysisConfig: { state: 'normal' | 'insufficient' | 'empty' } = {
-  state: 'empty',
+  state: DATA_SOURCE === 'mock' ? 'normal' : 'empty',
 }
 
-const exerciseOptions: ExerciseAnalysis[] = [
-  { name: 'Supino reto', category: 'Peito', maxLoads: [60, 65, 62, 70, 72, 75, 78, 80, 82, 84, 86, 88] },
-  { name: 'Desenvolvimento militar', category: 'Ombro', maxLoads: [30, 31, 32, 33, 34, 35, 36, 36, 37, 38, 39, 40] },
-  { name: 'Tríceps corda', category: 'Tríceps', maxLoads: [25, 26, 26, 28, 29, 30, 31, 32, 32, 34, 35, 36] },
-  { name: 'Puxada frente', category: 'Costas', maxLoads: [55, 56, 58, 60, 62, 63, 64, 66, 67, 68, 70, 72] },
-]
+// Use mock exercise data if available, otherwise empty array
+const exerciseOptions: ExerciseAnalysis[] =
+  DATA_SOURCE === 'mock'
+    ? MOCK_EXERCISE_OPTIONS.map(e => ({
+      name: e.name,
+      category: e.category,
+      maxLoads: e.maxLoads
+    }))
+    : []
 
-const rhythmByWeek = [72, 85, 68, 80, 92, 88, 95, 102, 97, 108, 112, 118]
+const rhythmByWeek = DATA_SOURCE === 'mock' ? MOCK_RHYTHM_BY_WEEK : []
 
-const periodMeta: Record<PeriodOption, { start: number; count: number; availableWeeks: number; sessions: number; minutes: number; totalLoad: number; activeDays: number; longestSession: number }> = {
-  'Últimas 4 semanas': { start: 4, count: 4, availableWeeks: 4, sessions: 16, minutes: 780, totalLoad: 34.6, activeDays: 14, longestSession: 68 },
-  'Últimas 8 semanas': { start: 0, count: 8, availableWeeks: 8, sessions: 32, minutes: 1574, totalLoad: 67.2, activeDays: 28, longestSession: 72 },
-  'Últimas 12 semanas': { start: 0, count: 12, availableWeeks: 12, sessions: 48, minutes: 2388, totalLoad: 105.8, activeDays: 41, longestSession: 76 },
-  'Este mês': { start: 8, count: 4, availableWeeks: 4, sessions: 17, minutes: 828, totalLoad: 38.6, activeDays: 15, longestSession: 76 },
+const periodMeta = DATA_SOURCE === 'mock' ? MOCK_PERIOD_META : {
+  'Últimas 4 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
+  'Últimas 8 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
+  'Últimas 12 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
+  'Este mês': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
 }
 
 const formatDuration = (minutes: number) => `${Math.floor(minutes / 60)}h ${minutes % 60}min`
@@ -93,8 +103,10 @@ const getAnalysisStatus = (period: PeriodOption) => {
   return 'ready'
 }
 
-const getEvolutionMetrics = (exercise: ExerciseAnalysis, period: PeriodOption) => {
-  const data = getPeriodValues(exercise.maxLoads, period)
+const getEvolutionMetrics = (exercise: ExerciseAnalysis | undefined, period: PeriodOption) => {
+  // Safe fallback for undefined exercise (API mode without data)
+  const maxLoads = exercise?.maxLoads ?? []
+  const data = getPeriodValues(maxLoads, period)
   const first = data[0]?.value ?? 0
   const last = data[data.length - 1]?.value ?? first
   const progress = first > 0 ? Math.round(((last - first) / first) * 100) : 0
@@ -124,7 +136,8 @@ const getHighlights = (period: PeriodOption) =>
 
 export const AnalysisPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>('Últimas 8 semanas')
-  const [selectedExercise, setSelectedExercise] = useState(exerciseOptions[0])
+  // Safe initialization: fallback to undefined if no exercises available (API mode)
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseAnalysis | undefined>(exerciseOptions[0])
   const [exerciseSearch, setExerciseSearch] = useState('')
   const [showPeriodSheet, setShowPeriodSheet] = useState(false)
   const [showExerciseSheet, setShowExerciseSheet] = useState(false)
@@ -161,15 +174,15 @@ export const AnalysisPage = () => {
   const summaryRows = useMemo(() => getSummaryRows(selectedPeriod), [selectedPeriod])
   const highlights = useMemo(() => getHighlights(selectedPeriod), [selectedPeriod])
   const analysisStatus = useMemo(() => getAnalysisStatus(selectedPeriod), [selectedPeriod])
-  const maxSets = Math.max(...rhythmData.map((item) => item.sets), 1)
+  const maxSets = Math.max(...(rhythmData?.map((item) => item.sets) ?? []), 1)
 
-  const evolutionValues = evolutionMetrics.data.map((point) => point.value)
+  const evolutionValues = (evolutionMetrics?.data ?? []).map((point) => point.value)
   const minEvolutionValue = evolutionValues.length > 0 ? Math.min(...evolutionValues) : 0
   const maxEvolutionValue = evolutionValues.length > 0 ? Math.max(...evolutionValues) : 0
   const evolutionRange = Math.max(maxEvolutionValue - minEvolutionValue, 1)
-  const xStep = evolutionMetrics.data.length > 1 ? 264 / (evolutionMetrics.data.length - 1) : 0
+  const xStep = (evolutionMetrics?.data?.length ?? 0) > 1 ? 264 / ((evolutionMetrics?.data?.length ?? 1) - 1) : 0
 
-  const linePath = evolutionMetrics.data
+  const linePath = (evolutionMetrics?.data ?? [])
     .map((point, index) => {
       const x = 18 + index * xStep
       const y = 100 - ((point.value - minEvolutionValue) / evolutionRange) * 80
@@ -236,7 +249,7 @@ export const AnalysisPage = () => {
             </div>
             <div className="flex flex-1 items-center justify-center rounded-gj-lg bg-gj-bg/50 px-6 text-center">
               <p className="text-sm text-gj-text-secondary leading-[1.43]">
-                Registre mais sessões de {selectedExercise.name.toLowerCase()} para acompanhar a evolução de carga.
+                Registre mais sessões de {selectedExercise?.name?.toLowerCase() ?? 'exercício'} para acompanhar a evolução de carga.
               </p>
             </div>
             <div className="text-[10px] text-gj-text-secondary leading-[1.5]">
@@ -284,7 +297,7 @@ export const AnalysisPage = () => {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h2 className="text-sm font-semibold text-white leading-[1.43]">
-                    {selectedExercise.name}
+                    {selectedExercise?.name ?? 'Selecione um exercício'}
                   </h2>
                   <p className="text-[10px] text-gj-text-secondary leading-[1.5]">
                     Evolução de carga máxima
@@ -303,7 +316,7 @@ export const AnalysisPage = () => {
               <div className="h-[128px] rounded-gj-lg bg-gj-bg/50 px-3 py-2">
                 <svg viewBox="0 0 300 112" className="h-full w-full overflow-visible" aria-hidden="true">
                   <path d={linePath} fill="none" stroke="#FF6B35" strokeWidth="2" />
-                  {evolutionMetrics.data.map((point, index) => {
+                  {(evolutionMetrics?.data ?? []).map((point, index) => {
                     const x = 18 + index * xStep
                     const y = 100 - ((point.value - minEvolutionValue) / evolutionRange) * 80
                     return (
@@ -322,7 +335,7 @@ export const AnalysisPage = () => {
               </div>
 
               <div className="flex items-center justify-between px-1 pt-2">
-                {evolutionMetrics.data.map((point) => (
+                {(evolutionMetrics?.data ?? []).map((point) => (
                   <span key={point.label} className="text-[10px] text-gj-text-secondary leading-[1.5]">
                     {point.label}
                   </span>
@@ -386,7 +399,7 @@ export const AnalysisPage = () => {
             </div>
 
             <div className="flex flex-col gap-2">
-              {highlights.map((item) => (
+              {(highlights ?? []).map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center justify-between rounded-gj-md bg-gj-surface-elevated px-3 py-3"
@@ -429,8 +442,8 @@ export const AnalysisPage = () => {
                         setShowPeriodSheet(false)
                       }}
                       className={`flex h-12 items-center justify-between rounded-gj-lg border px-4 text-sm transition-all cursor-pointer ${isSelected
-                          ? 'bg-gj-accent-soft border-gj-accent text-gj-accent font-semibold'
-                          : 'bg-gj-surface-elevated border-gj-border text-white hover:bg-white/10'
+                        ? 'bg-gj-accent-soft border-gj-accent text-gj-accent font-semibold'
+                        : 'bg-gj-surface-elevated border-gj-border text-white hover:bg-white/10'
                         }`}
                     >
                       <span>{period}</span>
@@ -470,7 +483,7 @@ export const AnalysisPage = () => {
 
               <div className="flex max-h-[248px] flex-col gap-2 overflow-y-auto pr-1">
                 {filteredExercises.map((exercise) => {
-                  const isSelected = selectedExercise.name === exercise.name
+                  const isSelected = selectedExercise?.name === exercise.name
                   return (
                     <button
                       key={exercise.name}
@@ -481,8 +494,8 @@ export const AnalysisPage = () => {
                         setShowExerciseSheet(false)
                       }}
                       className={`flex h-14 items-center justify-between rounded-gj-lg border px-4 text-left transition-all cursor-pointer ${isSelected
-                          ? 'bg-gj-accent-soft border-gj-accent'
-                          : 'bg-gj-surface-elevated border-gj-border hover:bg-white/10'
+                        ? 'bg-gj-accent-soft border-gj-accent'
+                        : 'bg-gj-surface-elevated border-gj-border hover:bg-white/10'
                         }`}
                     >
                       <span className="flex min-w-0 flex-col">

@@ -1,5 +1,9 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
+const rawDataSource = import.meta.env.VITE_DATA_SOURCE
+export const DATA_SOURCE: 'api' | 'mock' =
+  rawDataSource === 'mock' || rawDataSource === 'api' ? rawDataSource : 'api'
+
 const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/reset-password']
 
 const isPublicEndpoint = (endpoint?: string) =>

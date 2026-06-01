@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Check, ChevronDown, Clock, Dumbbell, ListChecks, Trophy } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '../../../components/ui/Card'
-import { profileService, type SessionRecord, type WorkoutRecords } from '../../../services/profileService'
+import { profileService, type ExerciseRecord, type SessionRecord, type WorkoutRecords } from '../../../services/profileService'
 
 const headerButtonClass =
   'w-9 h-9 rounded-gj-md bg-gj-surface-elevated border border-gj-border flex items-center justify-center text-gj-text-secondary transition-colors duration-200 hover:text-white hover:border-white/40 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 focus-visible:outline-offset-2'
@@ -92,7 +92,7 @@ export const PersonalRecordsPage = () => {
               <section>
                 <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes por exercício</h2>
                 <div className="space-y-3">
-                  {selectedWorkout?.exerciseRecords.map((record) => (
+                  {selectedWorkout?.exerciseRecords.map((record: ExerciseRecord) => (
                     <Card key={`${record.exercise}-${record.date}`} className="bg-gj-surface-elevated/50">
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
@@ -111,7 +111,7 @@ export const PersonalRecordsPage = () => {
               <section className="mt-8">
                 <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes de sessão</h2>
                 <div className="space-y-3">
-                  {selectedWorkout?.sessionRecords.map((record) => {
+                  {selectedWorkout?.sessionRecords.map((record: SessionRecord) => {
                     const Icon = sessionIconMap[record.icon]
 
                     return (
@@ -159,8 +159,8 @@ export const PersonalRecordsPage = () => {
                       type="button"
                       onClick={() => handleSelectWorkout(workout.id)}
                       className={`flex h-12 w-full items-center justify-between rounded-gj-md border px-4 text-left transition-colors duration-200 ${selected
-                          ? 'border-gj-accent bg-gj-accent-soft text-gj-accent'
-                          : 'border-gj-border bg-gj-surface-elevated text-gj-text-primary hover:border-gj-accent/70'
+                        ? 'border-gj-accent bg-gj-accent-soft text-gj-accent'
+                        : 'border-gj-border bg-gj-surface-elevated text-gj-text-primary hover:border-gj-accent/70'
                         }`}
                     >
                       <span className="text-sm font-semibold">{workout.name}</span>
