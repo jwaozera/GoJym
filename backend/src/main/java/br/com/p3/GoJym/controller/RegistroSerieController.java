@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 import java.util.List;
 import br.com.p3.GoJym.dto.SeriesCountDiaDTO;
+import br.com.p3.GoJym.dto.UltimoRegistroDTO;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import br.com.p3.GoJym.model.Usuario;
 
@@ -33,6 +35,13 @@ public class RegistroSerieController {
     public ResponseEntity<List<SeriesCountDiaDTO>> contarSeriesUltimaSemana(){
         Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         List<SeriesCountDiaDTO> lista = registroSerieService.contarSeriesUltimaSemana(usuarioLogado.getId());
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("{exercicioId")
+    public ResponseEntity<List<UltimoRegistroDTO>> getUltimasSeries(@PathVariable Long exercicioId){
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<UltimoRegistroDTO> lista = registroSerieService.getUltimasSeries(usuarioLogado.getId(), exercicioId);
         return ResponseEntity.ok(lista);
     }
 }

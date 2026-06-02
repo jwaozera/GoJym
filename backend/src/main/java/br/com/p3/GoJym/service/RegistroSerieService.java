@@ -2,6 +2,7 @@ package br.com.p3.GoJym.service;
 
 import br.com.p3.GoJym.dto.RegistroSerieCriadaRequestDTO;
 import br.com.p3.GoJym.dto.RegistroSerieCriadaResponseDTO;
+import br.com.p3.GoJym.dto.UltimoRegistroDTO;
 import br.com.p3.GoJym.model.Exercicio;
 import br.com.p3.GoJym.model.RegistroSerie;
 import br.com.p3.GoJym.model.RegistroTreino;
@@ -72,5 +73,9 @@ public class RegistroSerieService {
         }
 
         return lista;
+    }
+
+    public List<UltimoRegistroDTO> getUltimasSeries(UUID id, Long exercicioId) {
+        return null;
     }
 }
