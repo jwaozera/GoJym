@@ -38,7 +38,7 @@ public class RegistroSerieController {
         return ResponseEntity.ok(lista);
     }
 
-    @GetMapping("{exercicioId")
+    @GetMapping("{exercicioId}")
     public ResponseEntity<List<UltimoRegistroDTO>> getUltimasSeries(@PathVariable Long exercicioId){
         Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         List<UltimoRegistroDTO> lista = registroSerieService.getUltimasSeries(usuarioLogado.getId(), exercicioId);

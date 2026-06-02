@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
 import br.com.p3.GoJym.dto.SeriesCountDiaDTO;
+import java.util.LinkedHashMap;
 
 @Service
 public class RegistroSerieService {
@@ -57,7 +58,6 @@ public class RegistroSerieService {
         LocalDate segunda = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate domingo = segunda.plusDays(6);
 
-        // Query counts between segunda and hoje (no futuro)
         List<Object[]> resultados = registroSerieRepository.countSeriesByUsuarioBetweenDates(idUsuario, segunda, hoje);
 
         Map<LocalDate, Long> mapa = resultados.stream()
@@ -76,6 +76,35 @@ public class RegistroSerieService {
     }
 
     public List<UltimoRegistroDTO> getUltimasSeries(UUID id, Long exercicioId) {
-        return null;
+        List<RegistroSerie> allSeries = registroSerieRepository.getUltimasSeriesByUsuarioAndExercicio(id, exercicioId);
+
+        if (allSeries.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Pega o ID do último RegistroTreino (primeira série já está ordenada pelo mais recente)
+        UUID lastTreinoId = allSeries.get(0).getRegistroTreino().getId();
+
+        // Filtra apenas séries do último treino
+        List<RegistroSerie> lastTreinoSeries = allSeries.stream()
+                .filter(rs -> rs.getRegistroTreino().getId().equals(lastTreinoId))
+                .collect(Collectors.toList());
+
+        // Remove duplicatas por numeroSerie, mantendo a mais recente (primeiro a aparecer na lista)
+        Map<Integer, RegistroSerie> distinctByNumeroSerie = new LinkedHashMap<>();
+        for (RegistroSerie rs : lastTreinoSeries) {
+            Integer numeroSerie = rs.getNumeroSerie() != null ? rs.getNumeroSerie() : 0;
+            // putIfAbsent garante que mantém o primeiro (mais recente)
+            distinctByNumeroSerie.putIfAbsent(numeroSerie, rs);
+        }
+
+        // Mapeia para DTOs
+        return distinctByNumeroSerie.values().stream()
+                .map(rs -> new UltimoRegistroDTO(
+                        rs.getCarga() != null ? rs.getCarga() : 0f,
+                        rs.getRepeticoes() != null ? rs.getRepeticoes() : 0,
+                        rs.getNumeroSerie() != null ? rs.getNumeroSerie() : 0
+                ))
+                .collect(Collectors.toList());
     }
 }
