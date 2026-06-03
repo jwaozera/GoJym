@@ -21,7 +21,6 @@ interface LiveSet {
 
 interface LiveExercise {
   id: string
-  exercicioId: number | null
   name: string
   setsTarget: string // e.g. "4x8-12"
   restSeconds: number
@@ -66,7 +65,6 @@ export const ExecuteWorkoutPage = () => {
 
       return {
         id: ex.id,
-        exercicioId: typeof ex.exercicioId === 'number' ? ex.exercicioId : null,
         name: ex.exercicioNome ?? ex.exercicio?.nome ?? 'Exercício',
         setsTarget: `${numSeries}x${repRange}`,
         restSeconds: rest,
@@ -92,7 +90,6 @@ export const ExecuteWorkoutPage = () => {
   const [view, setView] = useState<PageView>('execution')
   const [summaryMode, setSummaryMode] = useState<SummaryMode>('completed')
   const initRef = useRef(false)
-  const registeringSetIdsRef = useRef(new Set<string>())
 
   /* Stable callbacks for RestTimer — must be before any early return */
   const handleRestFinish = useCallback(() => setShowRestTimer(false), [])
@@ -111,50 +108,6 @@ export const ExecuteWorkoutPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
-
-  useEffect(() => {
-    if (exercises.length === 0) return
-
-    let cancelled = false
-    const exercicioIds = exercises
-      .map((exercise) => exercise.exercicioId)
-      .filter((id): id is number => typeof id === 'number' && Number.isFinite(id) && id > 0)
-
-    if (exercicioIds.length === 0) return
-
-    const uniqueIds = Array.from(new Set(exercicioIds))
-
-    const loadRecords = async () => {
-      const records = await Promise.all(
-        uniqueIds.map(async (exercicioId) => ({
-          exercicioId,
-          record: await workoutService.getExerciseRecord(exercicioId),
-        }))
-      )
-
-      if (cancelled) return
-
-      const recordMap = new Map(
-        records.map(({ exercicioId, record }) => [exercicioId, record?.maiorCarga ?? null])
-      )
-
-      setExercises((prev) =>
-        prev.map((exercise) => ({
-          ...exercise,
-          lastMaxWeight:
-            exercise.exercicioId !== null
-              ? recordMap.get(exercise.exercicioId) ?? null
-              : null,
-        }))
-      )
-    }
-
-    loadRecords()
-
-    return () => {
-      cancelled = true
-    }
-  }, [exercises.length])
 
   if (!session || exercises.length === 0) {
     return (
@@ -212,7 +165,7 @@ export const ExecuteWorkoutPage = () => {
     )
   }
 
-  const handleToggleComplete = async (setId: string) => {
+  const handleToggleComplete = (setId: string) => {
     const targetSet = currentEx.sets.find(s => s.id === setId)
 
     // Se estava concluída e clicou para desmarcar
@@ -233,43 +186,14 @@ export const ExecuteWorkoutPage = () => {
       return
     }
 
-    if (!targetSet) return
-    if (registeringSetIdsRef.current.has(setId)) return
-
     const currentExercise = session?.exercicios?.find((ex) => ex.id === currentEx.id)
       ?? session?.exercises?.find((ex) => ex.id === currentEx.id)
 
     const idExercicio = currentExercise?.exercicioId
-    if (!activeExecution?.registroId) {
-      console.warn('Cannot register serie without an active workout execution')
-      return
-    }
-
-    if (!currentExercise || typeof idExercicio !== 'number' || !Number.isFinite(idExercicio) || idExercicio <= 0) {
-      console.warn('Cannot register serie without a valid backend exercise id')
-      return
-    }
-
-    const carga = Number.parseFloat(targetSet.weight)
-    const repeticoes = Number.parseInt(targetSet.reps, 10)
-
-    if (!Number.isFinite(carga) || carga <= 0 || !Number.isFinite(repeticoes) || repeticoes <= 0) {
-      console.warn('Cannot register serie without valid weight and reps')
-      return
-    }
-
-    registeringSetIdsRef.current.add(setId)
-    try {
-      const created = await workoutService.createRegistroSerie(activeExecution.registroId, {
-        idExercicio,
-        numeroSerie: targetSet.setNumber,
-        carga,
-        repeticoes,
-      })
-
-      if (!created) return
-    } finally {
-      registeringSetIdsRef.current.delete(setId)
+    if (activeExecution?.registroId && currentExercise && targetSet) {
+      if (typeof idExercicio !== 'number' || Number.isNaN(idExercicio)) {
+        throw new Error('Invalid exercicioId: cannot register serie without a valid backend exercise id')
+      }
     }
 
     setExercises((prev) => {
@@ -304,6 +228,14 @@ export const ExecuteWorkoutPage = () => {
           setActiveSetId(null)
         }
 
+        if (activeExecution?.registroId && currentExercise && targetSet) {
+          await workoutService.createRegistroSerie(activeExecution.registroId, {
+            idExercicio: idExercicio as number,
+            numeroSerie: targetSet.setNumber,
+            carga: parseFloat(targetSet.weight) || 0,
+            repeticoes: parseInt(targetSet.reps) || 0,
+          })
+        }
       })
 
       return updated
