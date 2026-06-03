@@ -45,4 +45,20 @@ export const workoutService = {
   clearActiveSession: async () => {
     return getCurrentService().clearActiveSession()
   },
+
+  getWorkoutCalendar: async (year: number, month: number) => {
+    return getCurrentService().getWorkoutCalendar(year, month)
+  },
+
+  getLastWeekSeries: async () => {
+    return getCurrentService().getLastWeekSeries()
+  },
+
+  getExerciseRecord: async (exercicioId: number) => {
+    return getCurrentService().getExerciseRecord(exercicioId)
+  },
+
+  getLastSessionSeriesByExercise: async (exercicioId: number) => {
+    return getCurrentService().getLastSessionSeriesByExercise(exercicioId)
+  },
 }

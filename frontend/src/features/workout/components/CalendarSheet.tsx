@@ -1,24 +1,26 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useWorkoutStore } from '../../../store/workoutStore'
+import { workoutService } from '../../../services/workoutService'
 
 interface CalendarSheetProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+const WEEK_DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom']
 const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
 export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
-  const { sessions } = useWorkoutStore()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [calendarDays, setCalendarDays] = useState<
+    { day: number; active: boolean; workoutName?: string; exerciseCount?: number }[]
+  >([])
 
   useEffect(() => {
     if (isOpen) {
@@ -29,26 +31,40 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    let cancelled = false
+
+    const loadCalendar = async () => {
+      const days = await workoutService.getWorkoutCalendar(year, month + 1)
+      if (!cancelled) {
+        setCalendarDays(days)
+      }
+    }
+
+    loadCalendar()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, year, month])
+
   const workoutDays = useMemo(() => {
     const map = new Map<number, { name: string; exerciseCount: number }[]>()
-    sessions.forEach((s) => {
-      const completed = s.completedAt ?? s.createdAt
-      if (completed) {
-        const d = new Date(completed)
-        if (d.getFullYear() === year && d.getMonth() === month) {
-          const day = d.getDate()
-          const existing = map.get(day) || []
-          const name = s.name ?? s.nome ?? 'Sessão'
-          const exerciseCount = (s.exercises?.length ?? s.exercicios?.length) ?? 0
-          existing.push({ name, exerciseCount })
-          map.set(day, existing)
-        }
+    calendarDays.forEach((item) => {
+      if (item.active) {
+        const existing = map.get(item.day) || []
+        existing.push({
+          name: item.workoutName || 'Treino',
+          exerciseCount: item.exerciseCount ?? 0,
+        })
+        map.set(item.day, existing)
       }
     })
     return map
-  }, [sessions, year, month])
+  }, [calendarDays])
 
-  // calendario grid
   const firstDayOfMonth = new Date(year, month, 1)
   const startOffset = (firstDayOfMonth.getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -73,28 +89,23 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center">
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose} />
 
-      {/* Top Sheet */}
       <div
         className="relative w-full max-w-[430px] bg-gj-bg border-b border-gj-border rounded-b-gj-lg animate-slideDown"
         style={{ maxHeight: '85vh', overflowY: 'auto' }}
       >
-        {/* Drag handle */}
         <div className="flex items-center justify-center pt-3 pb-2">
           <div className="w-10 h-1 rounded-full bg-gj-border" />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 mb-4">
-          <h3 className="text-base font-semibold text-white">Calendário</h3>
+          <h3 className="text-base font-semibold text-white">Calendario</h3>
           <button onClick={onClose} className="text-xs font-semibold text-gj-accent cursor-pointer">
             Fechar
           </button>
         </div>
 
-        {/* Navegação */}
         <div className="flex items-center justify-between px-5 mb-4">
           <button onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center text-gj-text-secondary hover:text-white transition-colors cursor-pointer">
             <ChevronLeft size={18} />
@@ -107,14 +118,12 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
           </button>
         </div>
 
-        {/* dias da semana */}
         <div className="grid grid-cols-7 px-5 mb-2">
           {WEEK_DAYS.map(d => (
             <span key={d} className="text-center text-[10px] text-gj-text-secondary">{d}</span>
           ))}
         </div>
 
-        {/* grid do calendário */}
         <div className="grid grid-cols-7 gap-y-1 px-5 pb-2">
           {Array.from({ length: weeks * 7 }, (_, i) => {
             const day = i - startOffset + 1
@@ -130,21 +139,23 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
               <button
                 key={i}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
-                className={`aspect-square rounded-gj-md flex flex-col items-center justify-center gap-0.5 transition-all duration-150 cursor-pointer ${isSelected
+                className={`aspect-square rounded-gj-md flex flex-col items-center justify-center gap-0.5 transition-all duration-150 cursor-pointer ${
+                  isSelected
                     ? 'bg-gj-accent'
                     : hasWorkout
                       ? 'bg-gj-surface-elevated'
                       : 'hover:bg-white/5'
-                  }`}
+                }`}
               >
-                <span className={`text-xs ${isSelected
+                <span className={`text-xs ${
+                  isSelected
                     ? 'font-bold text-white'
                     : isToday
                       ? 'font-bold text-gj-accent'
                       : hasWorkout
                         ? 'font-normal text-white'
                         : 'font-normal text-gj-text-secondary'
-                  }`}>
+                }`}>
                   {day}
                 </span>
                 {hasWorkout && !isSelected && (
@@ -155,7 +166,6 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
           })}
         </div>
 
-        {/* detalhes do dia selecionado */}
         {selectedWorkouts && selectedWorkouts.length > 0 && (
           <div className="mx-5 mb-5 rounded-gj-lg border border-gj-border overflow-hidden bg-gj-surface">
             <div className="px-4 py-3">
@@ -166,7 +176,9 @@ export const CalendarSheet = ({ isOpen, onClose }: CalendarSheetProps) => {
             {selectedWorkouts.map((w, i) => (
               <div key={i} className="mx-3 mb-3 rounded-gj-md px-3 py-2.5" style={{ background: 'rgba(30, 36, 51, 0.5)' }}>
                 <span className="text-sm text-white block">{w.name}</span>
-                <span className="text-xs text-gj-text-secondary">{w.exerciseCount} exercícios</span>
+                {w.exerciseCount > 0 && (
+                  <span className="text-xs text-gj-text-secondary">{w.exerciseCount} exercicios</span>
+                )}
               </div>
             ))}
           </div>
