@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../../../store/workoutStore'
-import { workoutService } from '../../../services/workoutService'
 import { Card } from '../../../components/ui'
 import { CalendarSheet } from '../components/CalendarSheet'
 import { WeeklySeriesSheet } from '../components/WeeklySeriesSheet'
@@ -56,8 +55,6 @@ const WEEKLY_STATS = DATA_SOURCE === 'mock' ? MOCK_WEEKLY_STATS : {
   mostFrequentWorkout: '',
 }
 
-type WeeklyStats = typeof WEEKLY_STATS
-
 const STREAK_WEEKS = DATA_SOURCE === 'mock' ? MOCK_STREAK_WEEKS : 0
 
 type ComparisonState = 'up' | 'down' | 'equal'
@@ -99,28 +96,10 @@ export const HomePage = () => {
   const [showWeeklySheet, setShowWeeklySheet] = useState(false)
   const [showDailySheet, setShowDailySheet] = useState(false)
   const [selectedWeek, setSelectedWeek] = useState<'current' | 'previous'>('current')
-  const [currentWeekSeries, setCurrentWeekSeries] = useState(WEEKLY_DATA)
 
   useEffect(() => {
     fetchSessions()
   }, [fetchSessions])
-
-  useEffect(() => {
-    let cancelled = false
-
-    const loadSeries = async () => {
-      const series = await workoutService.getLastWeekSeries()
-      if (!cancelled) {
-        setCurrentWeekSeries(series)
-      }
-    }
-
-    loadSeries()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   // auto descartar sessões (mais de 24h)
   useEffect(() => {
@@ -144,20 +123,8 @@ export const HomePage = () => {
   const streakWeeks = STREAK_WEEKS
 
   // dados do grafico baseado na semana atual/passada
-  const chartData = selectedWeek === 'current' ? currentWeekSeries : WEEKLY_DATA_PREV
+  const chartData = selectedWeek === 'current' ? WEEKLY_DATA : WEEKLY_DATA_PREV
   const maxSets = Math.max(...chartData.map((d) => d.sets), 1)
-  const weeklyStats = useMemo<WeeklyStats>(() => {
-    if (DATA_SOURCE === 'mock') return WEEKLY_STATS
-
-    const totalSeries = currentWeekSeries.reduce((total, day) => total + day.sets, 0)
-    const activeDays = currentWeekSeries.filter((day) => day.active).length
-
-    return {
-      ...WEEKLY_STATS,
-      totalSeries,
-      activeDays,
-    }
-  }, [currentWeekSeries])
 
   return (
     <div className="mx-auto flex w-full max-w-[393px] flex-col gap-3 px-5 pt-14 pb-4">
@@ -305,7 +272,7 @@ export const HomePage = () => {
       <WeeklySeriesSheet
         isOpen={showWeeklySheet}
         onClose={() => setShowWeeklySheet(false)}
-        data={weeklyStats}
+        data={WEEKLY_STATS}
       />
 
       <DailySeriesSheet
