@@ -34,7 +34,7 @@ interface WorkoutState {
     registroId: string,
     durationSeconds: number
   ) => Promise<void>
-  startActiveSession: (sessionId: string) => Promise<void>
+  startActiveSession: (sessionId: string) => Promise<boolean>
   setActiveExecution: (data: ActiveExecution | null) => void
   clearActiveExecution: () => Promise<void>
 }
@@ -114,7 +114,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       startActiveSession: async (sessionId) => {
         const registroId = await workoutService.setActiveSession(sessionId)
         if (!registroId) {
-          return
+          return false
         }
 
         set(state => {
@@ -145,6 +145,7 @@ export const useWorkoutStore = create<WorkoutState>()(
               : state.activeExecution,
           }
         })
+        return true
       },
 
       setActiveExecution: (data) =>

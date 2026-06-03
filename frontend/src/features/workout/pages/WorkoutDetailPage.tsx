@@ -46,9 +46,17 @@ export const WorkoutDetailPage = () => {
 
   const exerciseCount = session.qtdExercicios ?? session.exercicios?.length ?? 0
 
-  const handleStartSession = () => {
-    startActiveSession(session.id)
-    navigate(`/workout/execute/${session.id}`)
+  const handleStartSession = async () => {
+    if (!session?.id) return
+
+    try {
+      const started = await startActiveSession(session.id)
+      if (started) {
+        navigate(`/workout/execute/${session.id}`)
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar treino:', error)
+    }
   }
 
   return (

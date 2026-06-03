@@ -163,16 +163,22 @@ const emptyWeekSeries = (): WeeklySeriesDay[] =>
         active: false,
     }))
 
+const getWeekIndexFromDate = (dateString: string): number | null => {
+    const [year, month, day] = dateString.split('-').map(Number)
+    if (!year || !month || !day) return null
+
+    const date = new Date(year, month - 1, day)
+    if (Number.isNaN(date.getTime())) return null
+
+    return (date.getDay() + 6) % 7
+}
+
 const mapLastWeekSeries = (data: SeriesCountDiaDTO[]): WeeklySeriesDay[] => {
     const week = emptyWeekSeries()
 
     data.forEach((item) => {
-        const index = Number.isInteger(item.dia)
-            ? item.dia >= 1 && item.dia <= 7
-                ? item.dia - 1
-                : item.dia
-            : -1
-        if (index >= 0 && index < week.length) {
+        const index = getWeekIndexFromDate(item.data)
+        if (index !== null && index >= 0 && index < week.length) {
             week[index] = {
                 day: WEEK_DAY_LABELS[index],
                 sets: item.quantidade ?? 0,
