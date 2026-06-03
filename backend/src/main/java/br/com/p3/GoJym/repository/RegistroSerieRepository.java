@@ -20,4 +20,10 @@ public interface RegistroSerieRepository extends JpaRepository<RegistroSerie, UU
             "GROUP BY rt.data")
     List<Object[]> countSeriesByUsuarioBetweenDates(@Param("usuarioId") UUID usuarioId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    @Query("SELECT rs FROM RegistroSerie rs " +
+            "JOIN rs.registroTreino rt " +
+            "WHERE rt.usuario.id = :usuarioId AND rs.exercicio.id = :exercicioId " +
+            "ORDER BY rs.registroTreino.data DESC, rs.id DESC")
+    List<RegistroSerie> getUltimasSeriesByUsuarioAndExercicio(@Param("usuarioId") UUID usuarioId, @Param("exercicioId") Long exercicioId);
+
 }
