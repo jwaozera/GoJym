@@ -3,6 +3,7 @@ import type {
     CreateSessaoTreinoComExerciciosRequestDTO,
     UpdateSessaoTreinoComExerciciosRequestDTO,
 } from '../types'
+import type { WeeklySeriesDay, WorkoutCalendarDay, PreviousExerciseSet } from './workoutApiService'
 
 import { mockSessions as mockSessionsSource } from '../mocks/data'
 
@@ -134,5 +135,86 @@ export const workoutMockService = {
     clearActiveSession: async (): Promise<void> => {
         // No-op for mock
         return
+    },
+
+    getWorkoutCalendar: async (year: number, month: number): Promise<WorkoutCalendarDay[]> => {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        void year
+        void month
+
+        return mockSessions.slice(0, 4).map((session, index) => ({
+            day: ((index + 1) * 7) <= 28 ? (index + 1) * 7 : index + 4,
+            active: true,
+            workoutName: session.name ?? session.nome,
+            exerciseCount: session.exercicios?.length ?? session.exercises?.length ?? session.qtdExercicios ?? 0,
+        }))
+    },
+
+    getLastWeekSeries: async (): Promise<WeeklySeriesDay[]> => {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        return [
+            { day: 'Seg', sets: 10, active: true },
+            { day: 'Ter', sets: 14, active: true },
+            { day: 'Qua', sets: 0, active: false },
+            { day: 'Qui', sets: 21, active: true },
+            { day: 'Sex', sets: 17, active: true },
+            { day: 'Sab', sets: 12, active: true },
+            { day: 'Dom', sets: 0, active: false },
+        ]
+    },
+
+    getExerciseRecord: async (
+        exercicioId: number
+    ): Promise<{ maiorCarga?: number; maiorVolume?: number; maiorCargaUpdatedAt?: string; maiorVolumeUpdatedAt?: string } | null> => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        const records: Record<number, number> = {
+            1: 80,
+            2: 120,
+            3: 70,
+            4: 42,
+        }
+
+        const maiorCarga = records[exercicioId]
+        return maiorCarga
+            ? {
+                maiorCarga,
+                maiorVolume: maiorCarga * 10,
+                maiorCargaUpdatedAt: new Date().toISOString(),
+                maiorVolumeUpdatedAt: new Date().toISOString(),
+            }
+            : null
+    },
+
+    getLastSessionSeriesByExercise: async (
+        exercicioId: number
+    ): Promise<PreviousExerciseSet[]> => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        const seriesByExercise: Record<number, PreviousExerciseSet[]> = {
+            1: [
+                { setNumber: 1, weight: 72, reps: 12 },
+                { setNumber: 2, weight: 76, reps: 10 },
+                { setNumber: 3, weight: 80, reps: 8 },
+                { setNumber: 4, weight: 80, reps: 8 },
+            ],
+            2: [
+                { setNumber: 1, weight: 28, reps: 12 },
+                { setNumber: 2, weight: 30, reps: 10 },
+                { setNumber: 3, weight: 30, reps: 10 },
+            ],
+            3: [
+                { setNumber: 1, weight: 100, reps: 12 },
+                { setNumber: 2, weight: 110, reps: 10 },
+                { setNumber: 3, weight: 120, reps: 8 },
+                { setNumber: 4, weight: 120, reps: 8 },
+            ],
+            4: [
+                { setNumber: 1, weight: 62, reps: 12 },
+                { setNumber: 2, weight: 68, reps: 10 },
+                { setNumber: 3, weight: 70, reps: 10 },
+                { setNumber: 4, weight: 70, reps: 8 },
+            ],
+        }
+
+        return seriesByExercise[exercicioId] ?? []
     },
 }
