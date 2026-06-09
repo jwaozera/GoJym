@@ -50,8 +50,16 @@ export const workoutService = {
     return getCurrentService().getWorkoutCalendar(year, month)
   },
 
-  getLastWeekSeries: async () => {
-    return getCurrentService().getLastWeekSeries()
+  getWeekStats: async (year: number, month: number, day: number) => {
+    return getCurrentService().getWeekStats(year, month, day)
+  },
+
+  getWeeklyStreak: async (year: number, month: number, day: number) => {
+    return getCurrentService().getWeeklyStreak(year, month, day)
+  },
+
+  getLastWeekSeries: async (options?: { semanaPassada?: boolean }) => {
+    return getCurrentService().getLastWeekSeries(options)
   },
 
   getExerciseRecord: async (exercicioId: number) => {

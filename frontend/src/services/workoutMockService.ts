@@ -3,9 +3,15 @@ import type {
     CreateSessaoTreinoComExerciciosRequestDTO,
     UpdateSessaoTreinoComExerciciosRequestDTO,
 } from '../types'
-import type { WeeklySeriesDay, WorkoutCalendarDay, PreviousExerciseSet } from './workoutApiService'
+import type { WeeklySeriesDay, WorkoutCalendarDay, PreviousExerciseSet, WeekStats } from './workoutApiService'
 
-import { mockSessions as mockSessionsSource } from '../mocks/data'
+import {
+    mockSessions as mockSessionsSource,
+    WEEKLY_DATA,
+    WEEKLY_DATA_PREV,
+    WEEKLY_STATS,
+    STREAK_WEEKS,
+} from '../mocks/data'
 
 // Create a local mutable copy of the shared mock sessions for preview.
 let mockSessions: WorkoutSession[] = mockSessionsSource.map((s: any) => ({ ...s }))
@@ -150,17 +156,37 @@ export const workoutMockService = {
         }))
     },
 
-    getLastWeekSeries: async (): Promise<WeeklySeriesDay[]> => {
+    getWeekStats: async (year: number, month: number, day: number): Promise<WeekStats> => {
         await new Promise((resolve) => setTimeout(resolve, 100))
-        return [
-            { day: 'Seg', sets: 10, active: true },
-            { day: 'Ter', sets: 14, active: true },
-            { day: 'Qua', sets: 0, active: false },
-            { day: 'Qui', sets: 21, active: true },
-            { day: 'Sex', sets: 17, active: true },
-            { day: 'Sab', sets: 12, active: true },
-            { day: 'Dom', sets: 0, active: false },
-        ]
+        void year
+        void month
+        void day
+
+        return {
+            totalSessions: WEEKLY_STATS.totalSessions,
+            totalWeight: 8400,
+            totalTime: 4 * 3600 + 32 * 60,
+            totalSeries: WEEKLY_STATS.totalSeries,
+            avgSeriesPerSession: WEEKLY_STATS.avgSeriesPerSession,
+            activeDays: WEEKLY_STATS.activeDays,
+        }
+    },
+
+    getWeeklyStreak: async (year: number, month: number, day: number): Promise<number> => {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        void year
+        void month
+        void day
+
+        return STREAK_WEEKS
+    },
+
+    getLastWeekSeries: async (
+        options?: { semanaPassada?: boolean }
+    ): Promise<WeeklySeriesDay[]> => {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        const source = options?.semanaPassada ? WEEKLY_DATA_PREV : WEEKLY_DATA
+        return source.map((day) => ({ ...day }))
     },
 
     getExerciseRecord: async (
