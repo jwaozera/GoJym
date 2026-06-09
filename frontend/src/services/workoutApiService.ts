@@ -84,6 +84,19 @@ interface SeriesCountDiaDTO {
     quantidade: number
 }
 
+interface SemanaEstatisticasDTO {
+    totalSessoes: number
+    cargaTotal: number
+    tempoTotal: number
+    totalSeries: number
+    mediaSeriesPorSessao: number
+    diasAtivos: number
+}
+
+interface SequenciaSemanalDTO {
+    totalSemanas: number
+}
+
 interface RecordeExercicioResponseDTO {
     maiorCarga?: number
     maiorVolume?: number
@@ -108,6 +121,15 @@ export interface WeeklySeriesDay {
     day: string
     sets: number
     active: boolean
+}
+
+export interface WeekStats {
+    totalSessions: number
+    totalWeight: number
+    totalTime: number
+    totalSeries: number
+    avgSeriesPerSession: number
+    activeDays: number
 }
 
 export interface PreviousExerciseSet {
@@ -163,6 +185,15 @@ const emptyWeekSeries = (): WeeklySeriesDay[] =>
         active: false,
     }))
 
+const emptyWeekStats = (): WeekStats => ({
+    totalSessions: 0,
+    totalWeight: 0,
+    totalTime: 0,
+    totalSeries: 0,
+    avgSeriesPerSession: 0,
+    activeDays: 0,
+})
+
 const getWeekIndexFromDate = (dateString: string): number | null => {
     const [year, month, day] = dateString.split('-').map(Number)
     if (!year || !month || !day) return null
@@ -190,6 +221,19 @@ const mapLastWeekSeries = (data: SeriesCountDiaDTO[]): WeeklySeriesDay[] => {
     return week
 }
 
+const mapWeekStats = (data?: SemanaEstatisticasDTO | null): WeekStats => {
+    if (!data) return emptyWeekStats()
+
+    return {
+        totalSessions: data.totalSessoes ?? 0,
+        totalWeight: data.cargaTotal ?? 0,
+        totalTime: data.tempoTotal ?? 0,
+        totalSeries: data.totalSeries ?? 0,
+        avgSeriesPerSession: data.mediaSeriesPorSessao ?? 0,
+        activeDays: data.diasAtivos ?? 0,
+    }
+}
+
 /**
  * Workout service for real backend API (VITE_DATA_SOURCE=api)
  * Calls real Swagger endpoints:
@@ -201,7 +245,9 @@ const mapLastWeekSeries = (data: SeriesCountDiaDTO[]): WeeklySeriesDay[] => {
  * - POST /registro-treino/execute/{idSessaoTreino}
  * - POST /execute/serie/{idRegistroTreino}
  * - GET /registro-treino/{ano}/{mes}
- * - GET /execute/serie/last-week
+ * - GET /registro-treino/semana/{ano}/{mes}/{dia}
+ * - GET /registro-treino/sequencia/{ano}/{mes}/{dia}
+ * - GET /execute/serie/last-week?semanaPassada=false|true
  * - GET /execute/serie/{exercicioId}
  * - GET /recorde-exercicio/{exercicioId}
  */
@@ -346,9 +392,38 @@ export const workoutApiService = {
         }
     },
 
-    getLastWeekSeries: async (): Promise<WeeklySeriesDay[]> => {
+    getWeekStats: async (year: number, month: number, day: number): Promise<WeekStats> => {
         try {
-            const data = await apiClient.get<SeriesCountDiaDTO[]>('/execute/serie/last-week')
+            const data = await apiClient.get<SemanaEstatisticasDTO>(
+                `/registro-treino/semana/${year}/${month}/${day}`
+            )
+            return mapWeekStats(data)
+        } catch (error) {
+            console.error('Failed to fetch week stats:', error)
+            return emptyWeekStats()
+        }
+    },
+
+    getWeeklyStreak: async (year: number, month: number, day: number): Promise<number> => {
+        try {
+            const data = await apiClient.get<SequenciaSemanalDTO>(
+                `/registro-treino/sequencia/${year}/${month}/${day}`
+            )
+            return data?.totalSemanas ?? 0
+        } catch (error) {
+            console.error('Failed to fetch weekly streak:', error)
+            return 0
+        }
+    },
+
+    getLastWeekSeries: async (
+        options?: { semanaPassada?: boolean }
+    ): Promise<WeeklySeriesDay[]> => {
+        try {
+            const semanaPassada = options?.semanaPassada === true
+            const data = await apiClient.get<SeriesCountDiaDTO[]>(
+                `/execute/serie/last-week?semanaPassada=${semanaPassada}`
+            )
             return mapLastWeekSeries(data || [])
         } catch (error) {
             console.error('Failed to fetch last week series:', error)

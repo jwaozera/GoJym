@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../../../store/workoutStore'
 import { workoutService } from '../../../services/workoutService'
+import type { WeekStats } from '../../../services/workoutApiService'
 import { Card } from '../../../components/ui'
 import { CalendarSheet } from '../components/CalendarSheet'
 import { WeeklySeriesSheet } from '../components/WeeklySeriesSheet'
@@ -56,14 +57,23 @@ const WEEKLY_STATS = DATA_SOURCE === 'mock' ? MOCK_WEEKLY_STATS : {
   mostFrequentWorkout: '',
 }
 
-type WeeklyStats = typeof WEEKLY_STATS
+type WeeklyStatsDisplay = typeof WEEKLY_STATS
+
+const EMPTY_WEEK_STATS: WeekStats = {
+  totalSessions: 0,
+  totalWeight: 0,
+  totalTime: 0,
+  totalSeries: 0,
+  avgSeriesPerSession: 0,
+  activeDays: 0,
+}
 
 const STREAK_WEEKS = DATA_SOURCE === 'mock' ? MOCK_STREAK_WEEKS : 0
 
 type ComparisonState = 'up' | 'down' | 'equal'
 
 /* submetrica de trends (Sessões, Tempo, Carga total) */
-const SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = DATA_SOURCE === 'mock' ? [
+const MOCK_SUB_TRENDS: { label: string; value: string; comparison: ComparisonState }[] = DATA_SOURCE === 'mock' ? [
   { label: 'Sessões', value: '4', comparison: 'down' },
   { label: 'Tempo', value: '4:32', comparison: 'up' },
   { label: 'Carga total', value: '8.4t', comparison: 'equal' },
@@ -91,6 +101,48 @@ const ComparisonIcon = ({ state, size = 'sm' }: { state: ComparisonState; size?:
   )
 }
 
+const getDateParts = (date: Date) => ({
+  year: date.getFullYear(),
+  month: date.getMonth() + 1,
+  day: date.getDate(),
+})
+
+const compareMetric = (current: number, previous: number): ComparisonState => {
+  if (current > previous) return 'up'
+  if (current < previous) return 'down'
+  return 'equal'
+}
+
+const formatDurationShort = (seconds: number) => {
+  const safeSeconds = Math.max(0, seconds)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  return `${hours}:${String(minutes).padStart(2, '0')}`
+}
+
+const formatDurationLong = (seconds: number) => {
+  const safeSeconds = Math.max(0, seconds)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  return `${hours}h ${minutes}min`
+}
+
+const formatWeight = (weight: number) => {
+  const safeWeight = Math.max(0, weight)
+  if (safeWeight >= 1000) return `${(safeWeight / 1000).toFixed(1)}t`
+  return `${Math.round(safeWeight)}kg`
+}
+
+const toWeeklyStatsDisplay = (stats: WeekStats): WeeklyStatsDisplay => ({
+  totalSeries: stats.totalSeries,
+  totalSessions: stats.totalSessions,
+  totalWeight: formatWeight(stats.totalWeight),
+  totalTime: formatDurationLong(stats.totalTime),
+  activeDays: stats.activeDays,
+  avgSeriesPerSession: Number(stats.avgSeriesPerSession.toFixed(1)),
+  mostFrequentWorkout: '',
+})
+
 export const HomePage = () => {
   const navigate = useNavigate()
   const { activeExecution, clearActiveExecution, fetchSessions } = useWorkoutStore()
@@ -100,6 +152,10 @@ export const HomePage = () => {
   const [showDailySheet, setShowDailySheet] = useState(false)
   const [selectedWeek, setSelectedWeek] = useState<'current' | 'previous'>('current')
   const [currentWeekSeries, setCurrentWeekSeries] = useState(WEEKLY_DATA)
+  const [previousWeekSeries, setPreviousWeekSeries] = useState(WEEKLY_DATA_PREV)
+  const [currentWeekStats, setCurrentWeekStats] = useState<WeekStats>(EMPTY_WEEK_STATS)
+  const [previousWeekStats, setPreviousWeekStats] = useState<WeekStats>(EMPTY_WEEK_STATS)
+  const [streakWeeks, setStreakWeeks] = useState(STREAK_WEEKS)
 
   useEffect(() => {
     fetchSessions()
@@ -108,14 +164,38 @@ export const HomePage = () => {
   useEffect(() => {
     let cancelled = false
 
-    const loadSeries = async () => {
-      const series = await workoutService.getLastWeekSeries()
+    const loadHomeData = async () => {
+      const today = new Date()
+      const previousWeek = new Date(today)
+      previousWeek.setDate(today.getDate() - 7)
+
+      const currentDate = getDateParts(today)
+      const previousDate = getDateParts(previousWeek)
+
+      const [
+        currentSeries,
+        previousSeries,
+        currentStats,
+        previousStats,
+        weeklyStreak,
+      ] = await Promise.all([
+        workoutService.getLastWeekSeries({ semanaPassada: false }),
+        workoutService.getLastWeekSeries({ semanaPassada: true }),
+        workoutService.getWeekStats(currentDate.year, currentDate.month, currentDate.day),
+        workoutService.getWeekStats(previousDate.year, previousDate.month, previousDate.day),
+        workoutService.getWeeklyStreak(currentDate.year, currentDate.month, currentDate.day),
+      ])
+
       if (!cancelled) {
-        setCurrentWeekSeries(series)
+        setCurrentWeekSeries(currentSeries)
+        setPreviousWeekSeries(previousSeries)
+        setCurrentWeekStats(currentStats)
+        setPreviousWeekStats(previousStats)
+        setStreakWeeks(weeklyStreak)
       }
     }
 
-    loadSeries()
+    loadHomeData()
 
     return () => {
       cancelled = true
@@ -140,24 +220,35 @@ export const HomePage = () => {
     return `${weekDays[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]}`
   }, [])
 
-  // streak (mock: 21 semanas)
-  const streakWeeks = STREAK_WEEKS
-
   // dados do grafico baseado na semana atual/passada
-  const chartData = selectedWeek === 'current' ? currentWeekSeries : WEEKLY_DATA_PREV
+  const chartData = selectedWeek === 'current' ? currentWeekSeries : previousWeekSeries
   const maxSets = Math.max(...chartData.map((d) => d.sets), 1)
-  const weeklyStats = useMemo<WeeklyStats>(() => {
+  const weeklyStats = useMemo<WeeklyStatsDisplay>(() => {
     if (DATA_SOURCE === 'mock') return WEEKLY_STATS
+    return toWeeklyStatsDisplay(currentWeekStats)
+  }, [currentWeekStats])
 
-    const totalSeries = currentWeekSeries.reduce((total, day) => total + day.sets, 0)
-    const activeDays = currentWeekSeries.filter((day) => day.active).length
+  const subTrends = useMemo(() => {
+    if (DATA_SOURCE === 'mock') return MOCK_SUB_TRENDS
 
-    return {
-      ...WEEKLY_STATS,
-      totalSeries,
-      activeDays,
-    }
-  }, [currentWeekSeries])
+    return [
+      {
+        label: 'Sessões',
+        value: String(currentWeekStats.totalSessions),
+        comparison: compareMetric(currentWeekStats.totalSessions, previousWeekStats.totalSessions),
+      },
+      {
+        label: 'Tempo',
+        value: formatDurationShort(currentWeekStats.totalTime),
+        comparison: compareMetric(currentWeekStats.totalTime, previousWeekStats.totalTime),
+      },
+      {
+        label: 'Carga total',
+        value: formatWeight(currentWeekStats.totalWeight),
+        comparison: compareMetric(currentWeekStats.totalWeight, previousWeekStats.totalWeight),
+      },
+    ]
+  }, [currentWeekStats, previousWeekStats])
 
   return (
     <div className="mx-auto flex w-full max-w-[393px] flex-col gap-3 px-5 pt-14 pb-4">
@@ -187,7 +278,7 @@ export const HomePage = () => {
 
         {/* Row 3: 3-column sub-metrics */}
         <div className="absolute left-3 top-14 flex h-[43px] w-[327px] items-start">
-          {SUB_TRENDS.map((metric, i) => (
+          {subTrends.map((metric, i) => (
             <div
               key={metric.label}
               className={`flex-1 flex flex-col items-center gap-0 ${i === 1 ? 'border-x border-gj-border' : ''
