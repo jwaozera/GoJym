@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import br.com.p3.GoJym.dto.CalendarioDiaDTO;
+import br.com.p3.GoJym.dto.SemanaEstatisticasDTO;
+import br.com.p3.GoJym.dto.SequenciaSemanalDTO;
 
 @RestController
 @RequestMapping("/registro-treino")
@@ -41,5 +43,19 @@ public class RegistroTreinoController {
         Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         List<CalendarioDiaDTO> calendario = registroTreinoService.buscarCalendarioMes(ano, mes, usuarioLogado.getId());
         return ResponseEntity.ok(calendario);
+    }
+
+    @GetMapping("/semana/{ano}/{mes}/{dia}")
+    public ResponseEntity<SemanaEstatisticasDTO> obterEstatisticasSemana(@PathVariable int ano, @PathVariable int mes, @PathVariable int dia){
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SemanaEstatisticasDTO dto = registroTreinoService.obterEstatisticasSemana(ano, mes, dia, usuarioLogado.getId());
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/sequencia/{ano}/{mes}/{dia}")
+    public ResponseEntity<SequenciaSemanalDTO> obterSequenciaSemanal(@PathVariable int ano, @PathVariable int mes, @PathVariable int dia){
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SequenciaSemanalDTO dto = registroTreinoService.obterStreak(ano, mes, dia, usuarioLogado.getId());
+        return ResponseEntity.ok(dto);
     }
 }

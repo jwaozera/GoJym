@@ -53,12 +53,22 @@ public class RegistroSerieService {
         return new RegistroSerieCriadaResponseDTO(registroSerieSalva.getId(),registroSerieSalva.getExercicio(),registroSerieSalva.getNumeroSerie(),registroSerieSalva.getCarga(),registroSerieSalva.getRepeticoes(),recorde);
     }
 
-    public List<SeriesCountDiaDTO> contarSeriesUltimaSemana(UUID idUsuario) {
-        LocalDate hoje = LocalDate.now();
-        LocalDate segunda = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate domingo = segunda.plusDays(6);
+    public List<SeriesCountDiaDTO> contarSeriesUltimaSemana(UUID idUsuario, boolean semanaPassada) {
+        LocalDate referencia = LocalDate.now();
+        if (semanaPassada) {
+            referencia = referencia.minusDays(7);
+        }
+        return calcularSeriesSemana(idUsuario, referencia);
+    }
 
-        List<Object[]> resultados = registroSerieRepository.countSeriesByUsuarioBetweenDates(idUsuario, segunda, hoje);
+    private List<SeriesCountDiaDTO> calcularSeriesSemana(UUID idUsuario, LocalDate referencia) {
+        LocalDate segunda = referencia.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate domingo = segunda.plusDays(6);
+        LocalDate hoje = LocalDate.now();
+
+        // Se a semana é no futuro (p.ex. domingo > hoje), usa domingo como limite; caso contrário usa hoje
+        LocalDate limiteQuery = domingo.isBefore(hoje) || domingo.isEqual(hoje) ? domingo : hoje;
+        List<Object[]> resultados = registroSerieRepository.countSeriesByUsuarioBetweenDates(idUsuario, segunda, limiteQuery);
 
         Map<LocalDate, Long> mapa = resultados.stream()
                 .collect(Collectors.toMap(r -> (LocalDate) r[0], r -> ((Number) r[1]).longValue()));

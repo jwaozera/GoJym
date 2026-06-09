@@ -32,9 +32,10 @@ public class RegistroSerieController {
     }
 
     @GetMapping("/last-week")
-    public ResponseEntity<List<SeriesCountDiaDTO>> contarSeriesUltimaSemana(){
+    public ResponseEntity<List<SeriesCountDiaDTO>> contarSeriesUltimaSemana(
+            @RequestParam(name = "semanaPassada", defaultValue = "false") boolean semanaPassada){
         Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        List<SeriesCountDiaDTO> lista = registroSerieService.contarSeriesUltimaSemana(usuarioLogado.getId());
+        List<SeriesCountDiaDTO> lista = registroSerieService.contarSeriesUltimaSemana(usuarioLogado.getId(), semanaPassada);
         return ResponseEntity.ok(lista);
     }
 
