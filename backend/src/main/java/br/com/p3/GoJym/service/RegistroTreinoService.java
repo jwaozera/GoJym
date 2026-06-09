@@ -18,12 +18,14 @@ import br.com.p3.GoJym.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
 import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Collectors;
+import br.com.p3.GoJym.dto.SemanaEstatisticasDTO;
+import br.com.p3.GoJym.dto.SequenciaSemanalDTO;
 
 @Service
 public class RegistroTreinoService {
@@ -39,6 +41,66 @@ public class RegistroTreinoService {
         this.usuarioRepository = usuarioRepository;
         this.registroTreinoRepository = registroTreinoRepository;
         this.registroSerieRepository = registroSerieRepository;
+    }
+
+    public SemanaEstatisticasDTO obterEstatisticasSemana(int ano, int mes, int dia, UUID idUsuario) {
+        LocalDate referencia = LocalDate.of(ano, mes, dia);
+        // calcula segunda (inicio) e domingo (fim) da semana que contém 'referencia'
+        LocalDate inicio = referencia;
+        while (inicio.getDayOfWeek() != DayOfWeek.MONDAY) {
+            inicio = inicio.minusDays(1);
+        }
+        LocalDate fim = inicio;
+        while (fim.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            fim = fim.plusDays(1);
+        }
+
+        List<RegistroTreino> registros = registroTreinoRepository.findAllByUsuarioIdAndDataBetween(idUsuario, inicio, fim);
+
+        int totalSessoes = registros.size();
+
+        // soma duracao (em segundos), cuidando de nulos
+        int tempoTotal = registros.stream()
+                .map(RegistroTreino::getDuracaoSegundos)
+                .filter(d -> d != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        // dias ativos: dias únicos com registroTreino
+        int diasAtivos = (int) registros.stream()
+                .map(RegistroTreino::getData)
+                .distinct()
+                .count();
+
+        // soma de todas as cargas * repeticoes e contagem de series
+        float cargaTotal = 0f;
+        int totalSeries = 0;
+
+        if (registros != null && !registros.isEmpty()) {
+            List<UUID> registroIds = registros.stream().map(RegistroTreino::getId).collect(Collectors.toList());
+            List<RegistroSerie> todasSeries = registroSerieRepository.findByRegistroTreinoIdIn(registroIds);
+            Map<UUID, List<RegistroSerie>> seriesPorRegistro = todasSeries.stream()
+                    .collect(Collectors.groupingBy(rs -> rs.getRegistroTreino().getId()));
+
+            for (RegistroTreino rt : registros) {
+                List<RegistroSerie> series = seriesPorRegistro.get(rt.getId());
+                if (series != null && !series.isEmpty()) {
+                    totalSeries += series.size();
+                    for (RegistroSerie rs : series) {
+                        if (rs != null && rs.getCarga() != null && rs.getRepeticoes() != null) {
+                            cargaTotal += rs.getCarga() * rs.getRepeticoes();
+                        }
+                    }
+                }
+            }
+        }
+
+        float mediaSeriesPorSessao = 0f;
+        if (totalSessoes > 0) {
+            mediaSeriesPorSessao = (float) totalSeries / (float) totalSessoes;
+        }
+
+        return new SemanaEstatisticasDTO(totalSessoes, cargaTotal, tempoTotal, totalSeries, mediaSeriesPorSessao, diasAtivos);
     }
 
     public RegistroTreinoCriadoResponseDTO iniciarRegistroTreino(UUID idSessaoTreino, UUID idUsuario) {
@@ -116,6 +178,45 @@ public class RegistroTreinoService {
         return calendario;
     }
 
+    public SequenciaSemanalDTO obterSequenciaSemanal(UUID idUsuario) {
+        return obterStreak(LocalDate.now(), idUsuario);
+    }
 
+    public SequenciaSemanalDTO obterStreak(int ano, int mes, int dia, UUID idUsuario) {
+        LocalDate dataReferencia = LocalDate.of(ano, mes, dia);
+        return obterStreak(dataReferencia, idUsuario);
+    }
+
+    private SequenciaSemanalDTO obterStreak(LocalDate dataInicial, UUID idUsuario) {
+        int totalSemanas = 0;
+        LocalDate referencia = dataInicial;
+
+        // Loop até encontrar uma semana sem registroTreino
+        while (true) {
+            // Calcula segunda (inicio) e domingo (fim) da semana que contém 'referencia'
+            LocalDate inicio = referencia;
+            while (inicio.getDayOfWeek() != DayOfWeek.MONDAY) {
+                inicio = inicio.minusDays(1);
+            }
+            LocalDate fim = inicio;
+            while (fim.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                fim = fim.plusDays(1);
+            }
+
+            // Busca registroTreino nessa semana
+            List<RegistroTreino> registros = registroTreinoRepository.findAllByUsuarioIdAndDataBetween(idUsuario, inicio, fim);
+
+            // Se não houver, quebra o loop
+            if (registros.isEmpty()) {
+                break;
+            }
+
+            // Incrementa o contador e volta 1 semana
+            totalSemanas++;
+            referencia = referencia.minusDays(7);
+        }
+
+        return new SequenciaSemanalDTO(totalSemanas);
+    }
 
 }

@@ -13,6 +13,7 @@ public interface RegistroSerieRepository extends JpaRepository<RegistroSerie, UU
     RegistroSerie save(RegistroSerie registroSerie);
 
     List<RegistroSerie> findByRegistroTreinoId(UUID registroTreinoId);
+    List<RegistroSerie> findByRegistroTreinoIdIn(List<UUID> registroTreinoIds);
 
     @Query("SELECT rt.data, COUNT(rs) " +
             "FROM RegistroSerie rs JOIN rs.registroTreino rt " +
