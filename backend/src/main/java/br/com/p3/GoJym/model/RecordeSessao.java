@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import br.com.p3.GoJym.model.RecordeSessaoTipo;
 
 @Entity
 @Table(name = "recorde_sessao")
@@ -22,8 +23,9 @@ public class RecordeSessao {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String tipo;
+    private RecordeSessaoTipo tipo;
 
     @Column(nullable = false)
     private Float valor;
@@ -34,5 +36,5 @@ public class RecordeSessao {
 
 
     @Column(name = "updated_at")
-    private LocalDateTime UpdatedAt;
+    private LocalDateTime updatedAt;
 }

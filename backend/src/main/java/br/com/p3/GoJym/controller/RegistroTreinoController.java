@@ -52,6 +52,42 @@ public class RegistroTreinoController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/periodo/{semanas}")
+    public ResponseEntity<SemanaEstatisticasDTO> obterEstatisticasPorPeriodo(@PathVariable int semanas){
+        // aceita apenas 4, 8 ou 12 semanas
+        if (semanas != 4 && semanas != 8 && semanas != 12) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SemanaEstatisticasDTO dto = registroTreinoService.obterEstatisticasPeriodo(semanas, usuarioLogado.getId());
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/series-por-periodo/{semanas}")
+    public ResponseEntity<java.util.List<br.com.p3.GoJym.dto.SeriePorSemanaDTO>> obterSeriesPorPeriodo(@PathVariable int semanas){
+        // aceita apenas 4, 8 ou 12 semanas
+        if (semanas != 4 && semanas != 8 && semanas != 12) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        java.util.List<br.com.p3.GoJym.dto.SeriePorSemanaDTO> dto = registroTreinoService.obterSeriesPorPeriodo(semanas, usuarioLogado.getId());
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/maior-carga-exercicio/{exercicioId}/{semanas}")
+    public ResponseEntity<java.util.List<br.com.p3.GoJym.dto.ExercicioCargaPorSemanaDTO>> obterMaiorCargaPorExercicio(@PathVariable Long exercicioId, @PathVariable int semanas){
+        // aceita apenas 4, 8 ou 12 semanas
+        if (semanas != 4 && semanas != 8 && semanas != 12) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        java.util.List<br.com.p3.GoJym.dto.ExercicioCargaPorSemanaDTO> dto = registroTreinoService.obterMaiorCargaPorExercicioPeriodo(exercicioId, semanas, usuarioLogado.getId());
+        return ResponseEntity.ok(dto);
+    }
+
     @GetMapping("/sequencia/{ano}/{mes}/{dia}")
     public ResponseEntity<SequenciaSemanalDTO> obterSequenciaSemanal(@PathVariable int ano, @PathVariable int mes, @PathVariable int dia){
         Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

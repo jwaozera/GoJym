@@ -1,6 +1,7 @@
 package br.com.p3.GoJym.controller;
 
 import br.com.p3.GoJym.dto.RecordeExercicioResponseDTO;
+import br.com.p3.GoJym.dto.RecordeSessaoDTO;
 import br.com.p3.GoJym.exceptions.ExercicioNaoEncontradoException;
 import br.com.p3.GoJym.model.Usuario;
 import br.com.p3.GoJym.service.RecordeExercicioService;
@@ -10,6 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/recorde-exercicio")
@@ -28,5 +32,12 @@ public class RecordeExercicioController {
         } catch (ExercicioNaoEncontradoException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/sessao/{sessaoTreinoId}")
+    public ResponseEntity<List<RecordeSessaoDTO>> getRecordesSessao(@PathVariable UUID sessaoTreinoId) {
+        Usuario usuarioLogado = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<RecordeSessaoDTO> recordes = recordeExercicioService.getRecordesSessao(sessaoTreinoId, usuarioLogado.getId());
+        return ResponseEntity.ok(recordes);
     }
 }

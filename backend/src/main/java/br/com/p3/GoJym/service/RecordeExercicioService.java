@@ -1,22 +1,29 @@
 package br.com.p3.GoJym.service;
 
 import br.com.p3.GoJym.dto.RecordeExercicioResponseDTO;
+import br.com.p3.GoJym.dto.RecordeSessaoDTO;
 import br.com.p3.GoJym.exceptions.ExercicioNaoEncontradoException;
 import br.com.p3.GoJym.model.RecordeExercicio;
 import br.com.p3.GoJym.model.RegistroSerie;
+import br.com.p3.GoJym.model.SessaoExercicio;
 import br.com.p3.GoJym.repository.RecordeExercicioRepository;
+import br.com.p3.GoJym.repository.SessaoExercicioRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class RecordeExercicioService {
 
     private final RecordeExercicioRepository recordeExercicioRepository;
+    private final SessaoExercicioRepository sessaoExercicioRepository;
 
-    public RecordeExercicioService(RecordeExercicioRepository recordeExercicioRepository) {
+    public RecordeExercicioService(RecordeExercicioRepository recordeExercicioRepository, SessaoExercicioRepository sessaoExercicioRepository) {
         this.recordeExercicioRepository = recordeExercicioRepository;
+        this.sessaoExercicioRepository = sessaoExercicioRepository;
     }
 
     public RecordeExercicioResponseDTO getRecordeExercicioByExercicio(Long exercicioId, UUID id) {
@@ -60,5 +67,29 @@ public class RecordeExercicioService {
             aux=true;
         }
         return aux;
+    }
+
+    public List<RecordeSessaoDTO> getRecordesSessao(UUID sessaoTreinoId, UUID usuarioId) {
+        // Buscar todos os SessaoExercicio da sessão
+        List<SessaoExercicio> sessaoExercicios = sessaoExercicioRepository.findAllBySessaoTreinoId(sessaoTreinoId);
+        
+        // Para cada exercício da sessão, buscar o record do usuário e montar o DTO
+        return sessaoExercicios.stream()
+                .map(sessaoExercicio -> {
+                    RecordeExercicio recorde = recordeExercicioRepository
+                            .findRecordeExercicioByExercicioIdAndUsuarioId(
+                                    sessaoExercicio.getExercicio().getId(),
+                                    usuarioId
+                            )
+                            .orElse(null);
+                    
+                    // Se não houver record, retornar com valores null
+                    return new RecordeSessaoDTO(
+                            sessaoExercicio.getExercicio().getNome(),
+                            recorde != null ? recorde.getMaiorCarga() : null,
+                            recorde != null ? recorde.getMaiorCargaUpdatedAt() : null
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }
