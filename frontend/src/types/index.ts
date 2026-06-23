@@ -158,6 +158,44 @@ export interface RecordeSessao {
   maiorCargaTotal: number
 }
 
+export type PeriodWeeks = 4 | 8 | 12
+
+export interface RecordeSessaoDTO {
+  nomeExercicio: string
+  maiorCarga: number | null
+  maiorCargaUpdatedAt: string | null
+}
+
+export interface RecordeSessaoResumoDTO {
+  valor: number
+  updatedAt: string
+}
+
+export interface RecordeSessaoLatestMap {
+  MAIOR_CARGA_TOTAL?: RecordeSessaoResumoDTO | null
+  MAIS_SERIES?: RecordeSessaoResumoDTO | null
+  MAIOR_DURACAO?: RecordeSessaoResumoDTO | null
+}
+
+export interface SemanaEstatisticasDTO {
+  totalSessoes: number
+  cargaTotal: number
+  tempoTotal: number
+  totalSeries: number
+  mediaSeriesPorSessao: number
+  diasAtivos: number
+}
+
+export interface SeriePorSemanaDTO {
+  semana: number
+  totalSeries: number
+}
+
+export interface ExercicioCargaPorSemanaDTO {
+  semana: number
+  maiorCarga: number | null
+}
+
 // ===== Tipos auxiliares (para compatibilidade) =====
 export interface Set {
   id: string

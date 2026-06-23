@@ -92,19 +92,27 @@ export const PersonalRecordsPage = () => {
               <section>
                 <h2 className="mb-3 text-lg font-bold leading-[1.25]">Recordes por exercício</h2>
                 <div className="space-y-3">
-                  {selectedWorkout?.exerciseRecords.map((record: ExerciseRecord) => (
-                    <Card key={`${record.exercise}-${record.date}`} className="bg-gj-surface-elevated/50">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold leading-[1.35]">{record.exercise}</p>
-                          <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
+                  {selectedWorkout?.exerciseRecords.length ? (
+                    selectedWorkout.exerciseRecords.map((record: ExerciseRecord) => (
+                      <Card key={`${record.exercise}-${record.date}`} className="bg-gj-surface-elevated/50">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold leading-[1.35]">{record.exercise}</p>
+                            <p className="mt-1 text-xs text-gj-text-secondary">{record.date}</p>
+                          </div>
+                          <p className="shrink-0 text-sm font-bold text-gj-accent">
+                            {record.weightKg > 0
+                              ? `${record.weightKg}kg${record.reps ? ` x ${record.reps} reps` : ''}`
+                              : 'Sem recorde'}
+                          </p>
                         </div>
-                        <p className="shrink-0 text-sm font-bold text-gj-accent">
-                          {record.weightKg}kg x {record.reps} reps
-                        </p>
-                      </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="bg-gj-surface-elevated/50 text-sm text-gj-text-secondary">
+                      Nenhum recorde de exercício nesta sessão.
                     </Card>
-                  ))}
+                  )}
                 </div>
               </section>
 
