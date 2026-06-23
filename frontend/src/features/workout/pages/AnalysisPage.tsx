@@ -1,114 +1,71 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, Check, ChevronDown, Info, Medal, Search } from 'lucide-react'
 import { Card } from '../../../components/ui'
-import { DATA_SOURCE } from '../../../services/api'
-import {
-  EXERCISE_OPTIONS as MOCK_EXERCISE_OPTIONS,
-  RHYTHM_BY_WEEK as MOCK_RHYTHM_BY_WEEK,
-  PERIOD_META as MOCK_PERIOD_META,
-  type PeriodOption,
-  type ExerciseAnalysisData,
-} from '../../../mocks/data'
+import { analyticsService } from '../../../services/analyticsService'
+import { exerciseService } from '../../../services/exerciseService'
+import type {
+  ExercicioCargaPorSemanaDTO,
+  PeriodWeeks,
+  RecordeSessaoLatestMap,
+  SemanaEstatisticasDTO,
+  SeriePorSemanaDTO,
+} from '../../../types'
 
 interface ExerciseAnalysis {
+  id: number
   name: string
   category: string
-  maxLoads: number[]
 }
 
-const periodOptions: PeriodOption[] = ['Últimas 4 semanas', 'Últimas 8 semanas', 'Últimas 12 semanas', 'Este mês']
+type PeriodOption = 'Últimas 4 semanas' | 'Últimas 8 semanas' | 'Últimas 12 semanas'
 
-// Show mock data in mock mode, empty state in API mode
-const demoAnalysisConfig: { state: 'normal' | 'insufficient' | 'empty' } = {
-  state: DATA_SOURCE === 'mock' ? 'normal' : 'empty',
+const periodOptions: PeriodOption[] = ['Últimas 4 semanas', 'Últimas 8 semanas', 'Últimas 12 semanas']
+
+const periodWeeks: Record<PeriodOption, PeriodWeeks> = {
+  'Últimas 4 semanas': 4,
+  'Últimas 8 semanas': 8,
+  'Últimas 12 semanas': 12,
 }
 
-// Use mock exercise data if available, otherwise empty array
-const exerciseOptions: ExerciseAnalysis[] =
-  DATA_SOURCE === 'mock'
-    ? MOCK_EXERCISE_OPTIONS.map(e => ({
-      name: e.name,
-      category: e.category,
-      maxLoads: e.maxLoads
+const emptyStats: SemanaEstatisticasDTO = {
+  totalSessoes: 0,
+  cargaTotal: 0,
+  tempoTotal: 0,
+  totalSeries: 0,
+  mediaSeriesPorSessao: 0,
+  diasAtivos: 0,
+}
+
+const formatDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, seconds)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  return `${hours}h ${minutes}min`
+}
+
+const formatWeight = (weight: number) =>
+  weight >= 1000 ? `${(weight / 1000).toFixed(1)}t` : `${Math.round(weight)}kg`
+
+const formatDate = (value?: string | null) => {
+  if (!value) return 'Sem registro'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Sem registro' : date.toLocaleDateString('pt-BR')
+}
+
+const getEvolutionMetrics = (loads: ExercicioCargaPorSemanaDTO[]) => {
+  const data = loads
+    .filter((item): item is ExercicioCargaPorSemanaDTO & { maiorCarga: number } =>
+      item.maiorCarga !== null
+    )
+    .map((item) => ({
+      label: `S${item.semana}`,
+      value: item.maiorCarga,
     }))
-    : []
-
-const rhythmByWeek = DATA_SOURCE === 'mock' ? MOCK_RHYTHM_BY_WEEK : []
-
-const periodMeta = DATA_SOURCE === 'mock' ? MOCK_PERIOD_META : {
-  'Últimas 4 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
-  'Últimas 8 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
-  'Últimas 12 semanas': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
-  'Este mês': { start: 0, count: 0, availableWeeks: 0, sessions: 0, minutes: 0, totalLoad: 0, activeDays: 0, longestSession: 0 },
-}
-
-const formatDuration = (minutes: number) => `${Math.floor(minutes / 60)}h ${minutes % 60}min`
-
-const getPeriodValues = (values: number[], period: PeriodOption) => {
-  const meta = periodMeta[period]
-  const sliced = values.slice(meta.start, meta.start + meta.availableWeeks)
-
-  if (period !== 'Últimas 12 semanas') {
-    return sliced.map((value, index) => ({ label: `S${index + 1}`, value }))
-  }
-
-  return [0, 1, 2].map((monthIndex) => {
-    const chunk = values.slice(monthIndex * 4, monthIndex * 4 + 4)
-    return {
-      label: `M${monthIndex + 1}`,
-      value: Math.max(...chunk),
-    }
-  })
-}
-
-const getRhythmData = (period: PeriodOption) => {
-  const meta = periodMeta[period]
-  const sliced = rhythmByWeek.slice(meta.start, meta.start + meta.availableWeeks)
-
-  if (period !== 'Últimas 12 semanas') {
-    return sliced.map((sets, index) => ({ label: `S${index + 1}`, sets }))
-  }
-
-  return [0, 1, 2].map((monthIndex) => {
-    const chunk = rhythmByWeek.slice(monthIndex * 4, monthIndex * 4 + 4)
-    return {
-      label: `M${monthIndex + 1}`,
-      sets: chunk.reduce((total, sets) => total + sets, 0),
-    }
-  })
-}
-
-const getSummaryRows = (period: PeriodOption) => {
-  const meta = periodMeta[period]
-  const totalSets = getRhythmData(period).reduce((total, item) => total + item.sets, 0)
-  const averageSets = meta.sessions > 0 ? totalSets / meta.sessions : 0
-
-  return [
-    { label: 'Sessões', value: String(meta.sessions) },
-    { label: 'Tempo total', value: formatDuration(meta.minutes) },
-    { label: 'Carga total', value: `${meta.totalLoad.toFixed(1)}t` },
-    { label: 'Dias ativos', value: String(meta.activeDays) },
-    { label: 'Média séries/sessão', value: averageSets.toFixed(1) },
-    { label: 'Sessão mais longa', value: formatDuration(meta.longestSession) },
-  ]
-}
-
-const getAnalysisStatus = (period: PeriodOption) => {
-  if (demoAnalysisConfig.state === 'insufficient') return 'insufficient'
-  if (demoAnalysisConfig.state === 'empty') return 'empty'
-
-  const meta = periodMeta[period]
-  if (meta.sessions === 0) return 'empty'
-  if (meta.availableWeeks < 3) return 'insufficient'
-  return 'ready'
-}
-
-const getEvolutionMetrics = (exercise: ExerciseAnalysis | undefined, period: PeriodOption) => {
-  // Safe fallback for undefined exercise (API mode without data)
-  const maxLoads = exercise?.maxLoads ?? []
-  const data = getPeriodValues(maxLoads, period)
-  const first = data[0]?.value ?? 0
-  const last = data[data.length - 1]?.value ?? first
+  const validValues = loads
+    .map((item) => item.maiorCarga)
+    .filter((value): value is number => value !== null)
+  const first = validValues[0] ?? 0
+  const last = validValues[validValues.length - 1] ?? first
   const progress = first > 0 ? Math.round(((last - first) / first) * 100) : 0
 
   return {
@@ -116,28 +73,42 @@ const getEvolutionMetrics = (exercise: ExerciseAnalysis | undefined, period: Per
     first,
     last,
     progress,
-    range: `${first}kg → ${last}kg`,
+    range: validValues.length > 0 ? `${first}kg → ${last}kg` : 'Sem dados',
   }
 }
 
-const getHighlights = (period: PeriodOption) =>
-  exerciseOptions
-    .map((exercise) => {
-      const metrics = getEvolutionMetrics(exercise, period)
-      return {
-        name: exercise.name,
-        range: metrics.range,
-        progress: `+${metrics.progress}%`,
-        progressValue: metrics.progress,
-      }
-    })
-    .sort((a, b) => b.progressValue - a.progressValue)
-    .slice(0, 3)
+const getHighlights = (records: RecordeSessaoLatestMap) => [
+  {
+    name: 'Maior carga total',
+    range: formatDate(records.MAIOR_CARGA_TOTAL?.updatedAt),
+    progress: records.MAIOR_CARGA_TOTAL
+      ? formatWeight(records.MAIOR_CARGA_TOTAL.valor)
+      : '—',
+  },
+  {
+    name: 'Mais séries',
+    range: formatDate(records.MAIS_SERIES?.updatedAt),
+    progress: records.MAIS_SERIES ? String(Math.round(records.MAIS_SERIES.valor)) : '—',
+  },
+  {
+    name: 'Maior duração',
+    range: formatDate(records.MAIOR_DURACAO?.updatedAt),
+    progress: records.MAIOR_DURACAO
+      ? formatDuration(records.MAIOR_DURACAO.valor)
+      : '—',
+  },
+]
 
 export const AnalysisPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>('Últimas 8 semanas')
-  // Safe initialization: fallback to undefined if no exercises available (API mode)
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseAnalysis | undefined>(exerciseOptions[0])
+  const [exerciseOptions, setExerciseOptions] = useState<ExerciseAnalysis[]>([])
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseAnalysis | undefined>()
+  const [periodStats, setPeriodStats] = useState<SemanaEstatisticasDTO>(emptyStats)
+  const [seriesByWeek, setSeriesByWeek] = useState<SeriePorSemanaDTO[]>([])
+  const [exerciseLoads, setExerciseLoads] = useState<ExercicioCargaPorSemanaDTO[]>([])
+  const [latestRecords, setLatestRecords] = useState<RecordeSessaoLatestMap>({})
+  const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [exerciseSearch, setExerciseSearch] = useState('')
   const [showPeriodSheet, setShowPeriodSheet] = useState(false)
   const [showExerciseSheet, setShowExerciseSheet] = useState(false)
@@ -158,22 +129,92 @@ export const AnalysisPage = () => {
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [showPeriodTooltip])
 
+  useEffect(() => {
+    let cancelled = false
+
+    const loadBaseData = async () => {
+      const [exercises, records] = await Promise.all([
+        exerciseService.getAll(),
+        analyticsService.getLatestSessionRecords(),
+      ])
+
+      if (cancelled) return
+
+      const mappedExercises = exercises.map((exercise) => ({
+        id: exercise.id,
+        name: exercise.nome,
+        category: 'Exercício',
+      }))
+      setExerciseOptions(mappedExercises)
+      setSelectedExercise((current) => current ?? mappedExercises[0])
+      setLatestRecords(records)
+    }
+
+    loadBaseData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const weeks = periodWeeks[selectedPeriod]
+
+    const loadAnalysis = async () => {
+      setLoading(true)
+      const [stats, weeklySeries, loads] = await Promise.all([
+        analyticsService.getPeriodStats(weeks),
+        analyticsService.getSeriesByPeriod(weeks),
+        selectedExercise
+          ? analyticsService.getExerciseMaxLoadByPeriod(selectedExercise.id, weeks)
+          : Promise.resolve([]),
+      ])
+
+      if (cancelled) return
+
+      setPeriodStats(stats)
+      setSeriesByWeek([...weeklySeries].sort((a, b) => a.semana - b.semana))
+      setExerciseLoads([...loads].sort((a, b) => a.semana - b.semana))
+      setLoading(false)
+      setHasLoaded(true)
+    }
+
+    loadAnalysis()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedExercise, selectedPeriod])
+
   const filteredExercises = useMemo(() => {
     const query = exerciseSearch.trim().toLowerCase()
     if (!query) return exerciseOptions
     return exerciseOptions.filter((exercise) =>
       `${exercise.name} ${exercise.category}`.toLowerCase().includes(query)
     )
-  }, [exerciseSearch])
+  }, [exerciseOptions, exerciseSearch])
 
-  const evolutionMetrics = useMemo(
-    () => getEvolutionMetrics(selectedExercise, selectedPeriod),
-    [selectedExercise, selectedPeriod]
+  const evolutionMetrics = useMemo(() => getEvolutionMetrics(exerciseLoads), [exerciseLoads])
+  const rhythmData = useMemo(
+    () => seriesByWeek.map((item) => ({ label: `S${item.semana}`, sets: item.totalSeries })),
+    [seriesByWeek]
   )
-  const rhythmData = useMemo(() => getRhythmData(selectedPeriod), [selectedPeriod])
-  const summaryRows = useMemo(() => getSummaryRows(selectedPeriod), [selectedPeriod])
-  const highlights = useMemo(() => getHighlights(selectedPeriod), [selectedPeriod])
-  const analysisStatus = useMemo(() => getAnalysisStatus(selectedPeriod), [selectedPeriod])
+  const summaryRows = useMemo(() => [
+    { label: 'Sessões', value: String(periodStats.totalSessoes) },
+    { label: 'Tempo total', value: formatDuration(periodStats.tempoTotal) },
+    { label: 'Carga total', value: formatWeight(periodStats.cargaTotal) },
+    { label: 'Dias ativos', value: String(periodStats.diasAtivos) },
+    { label: 'Média séries/sessão', value: periodStats.mediaSeriesPorSessao.toFixed(1) },
+    { label: 'Total de séries', value: String(periodStats.totalSeries) },
+  ], [periodStats])
+  const highlights = useMemo(() => getHighlights(latestRecords), [latestRecords])
+  const analysisStatus: 'empty' | 'insufficient' | 'ready' =
+    periodStats.totalSessoes === 0
+      ? 'empty'
+      : rhythmData.length < 3
+        ? 'insufficient'
+        : 'ready'
   const maxSets = Math.max(...(rhythmData?.map((item) => item.sets) ?? []), 1)
 
   const evolutionValues = (evolutionMetrics?.data ?? []).map((point) => point.value)
@@ -189,6 +230,16 @@ export const AnalysisPage = () => {
       return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
     })
     .join(' ')
+
+  if (loading && !hasLoaded) {
+    return (
+      <div className="flex flex-col gap-3 px-5 pt-14 pb-4">
+        <Card className="!p-6 min-h-[360px] flex items-center justify-center">
+          <span className="text-sm text-gj-text-secondary">Carregando análise...</span>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-3 px-5 pt-14 pb-4">
@@ -210,7 +261,7 @@ export const AnalysisPage = () => {
               <div className="absolute left-1/2 top-11 z-[50] w-[min(254px,calc(100vw-40px))] -translate-x-1/2 rounded-gj-md border border-gj-border bg-gj-surface-elevated p-3 shadow-lg">
                 <div className="space-y-2 text-[11px] leading-[1.45] text-gj-text-secondary">
                   <p>S1, S2, S3... = semanas do período selecionado</p>
-                  <p>M1, M2, M3 = meses agrupados em 12 semanas</p>
+                  <p>Os pontos sem carga registrada não aparecem no gráfico</p>
                 </div>
               </div>
             )}
@@ -305,7 +356,7 @@ export const AnalysisPage = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-xl font-bold text-gj-success leading-[1.4]">
-                    +{evolutionMetrics.progress}%
+                    {evolutionMetrics.progress > 0 ? '+' : ''}{evolutionMetrics.progress}%
                   </div>
                   <div className="text-[10px] text-gj-text-secondary leading-[1.5]">
                     {evolutionMetrics.range}
