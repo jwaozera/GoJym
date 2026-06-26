@@ -1,87 +1,121 @@
 # GoJym
 
-Aplicação web mobile-first para controle de treinos de academia.
+O **GoJym** é uma aplicação web **mobile-first** para gerenciamento de treinos de academia, desenvolvida como projeto acadêmico.
 
-O GoJym permite criar treinos, executar sessões, registrar séries, acompanhar métricas semanais e visualizar evolução por período. Nesta etapa, o projeto está focado no front-end, com dados mockados/localizados e estrutura preparada para futura integração com back-end e banco de dados.
+A plataforma permite criar treinos personalizados, executar sessões, registrar séries realizadas, acompanhar métricas de desempenho e visualizar a evolução do usuário por meio de análises e recordes pessoais.
+
+O projeto possui um **frontend em React + TypeScript**, um **backend em Spring Boot** e utiliza **PostgreSQL** para persistência dos dados, com comunicação através de uma API REST.
+
+---
 
 ## Links
 
-- Deploy: https://go-jym.vercel.app
-- Figma: https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
-- Documentação AB1: [docs/GoJym_Documentacao_AB1.pdf](docs/GoJym_Documentacao_AB1.pdf)
+- **Deploy:** https://go-jym.vercel.app
+- **Protótipo (Figma):** https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
+- **Documentação AB1:** `docs/GoJym_Documentacao_AB1.pdf`
 
-## Funcionalidades principais
+---
 
-- Autenticação com login, cadastro e recuperação de senha
-- Home com resumo semanal, calendário, streak e gráfico de séries por dia
-- Criação, edição, listagem e detalhe de treinos
-- Execução de sessão com registro de séries e timer de descanso
-- Resumo de sessão concluída ou encerrada parcialmente
-- Análise por período, exercício, ritmo e destaques
-- Perfil com edição de dados, recordes pessoais e logout
+## Funcionalidades
+
+- Autenticação de usuários (login, cadastro e recuperação de senha)
+- Gerenciamento de treinos personalizados
+- Execução de sessões com registro de séries e timer de descanso
+- Dashboard com resumo semanal, calendário e indicadores de desempenho
+- Análises por período (4, 8 e 12 semanas)
+- Evolução da carga por exercício
+- Recordes pessoais de desempenho
+- Gerenciamento do perfil do usuário
+
+---
 
 ## Tecnologias
 
+### Frontend
 - React
 - TypeScript
 - Vite
 - Tailwind CSS
 - Zustand
 - React Router
-- Vercel
 
-## Como rodar localmente
+### Backend
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- JWT
+- PostgreSQL
+- Maven
 
-Clone o repositório:
+---
+
+## Como executar
+
+### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/jwaozera/GoJym.git
-```
-
-Entre na pasta:
-
-```bash
 cd GoJym
 ```
 
-Instale as dependências:
+### 2. Iniciar o banco de dados
 
 ```bash
-npm install
+docker compose up -d
 ```
 
-Rode o projeto:
+### 3. Executar o backend
 
 ```bash
-npm run dev
-```
-
-No Windows, se houver bloqueio do PowerShell:
-
-```bash
-npm.cmd run dev
-```
-
-## Build
-
-```bash
-npm run build
+cd backend
+./mvnw spring-boot:run
 ```
 
 No Windows:
 
 ```bash
-npm.cmd run build
+mvnw spring-boot:run
 ```
 
-## Status do projeto
+### 4. Executar o frontend
 
-O front-end está funcional e publicado na Vercel.
+Abra outro terminal:
 
-Atualmente, os dados são mockados/localizados. A integração real com back-end, banco de dados e persistência definitiva está prevista para a próxima etapa do projeto.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+Backend:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## Estrutura do projeto
+
+```text
+GoJym/
+├── frontend/
+├── backend/
+├── docs/
+├── docker-compose.yml
+└── README.md
+```
+
+---
 
 ## Equipe
 
-- João Lima — Desenvolvedor Back-end
-- João Euclides — Desenvolvedor Front-end
-- Artur Ferreira — Desenvolvedor Full-stack
+- **João Lima** — Desenvolvedor Back-end
+- **João Euclides** — Desenvolvedor Front-end
+- **Artur Ferreira** — Desenvolvedor Full-stack
