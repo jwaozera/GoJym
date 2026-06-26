@@ -6,32 +6,36 @@ A plataforma permite criar treinos personalizados, executar sessões, registrar 
 
 O projeto possui um **frontend em React + TypeScript**, um **backend em Spring Boot** e utiliza **PostgreSQL** para persistência dos dados, com comunicação através de uma API REST.
 
----
+
 
 ## Links
 
 - **Deploy:** https://go-jym.vercel.app
-- **Protótipo (Figma):** https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
-- **Documentação AB1:** `docs/GoJym_Documentacao_AB1.pdf`
+- **Protótipo no Figma:** https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
+- **Documentação final:** [docs/GoJym_Documentação_Final.pdf](docs/GoJym_Documentação_Final.pdf)
 
----
+
 
 ## Funcionalidades
 
-- Autenticação de usuários (login, cadastro e recuperação de senha)
+- Autenticação de usuários com login e cadastro
 - Gerenciamento de treinos personalizados
-- Execução de sessões com registro de séries e timer de descanso
+- Criação, edição, listagem e detalhamento de treinos
+- Execução de sessões com registro de séries
+- Timer de descanso durante o treino
+- Resumo de sessão concluída ou encerrada parcialmente
 - Dashboard com resumo semanal, calendário e indicadores de desempenho
-- Análises por período (4, 8 e 12 semanas)
-- Evolução da carga por exercício
-- Recordes pessoais de desempenho
-- Gerenciamento do perfil do usuário
+- Análise por período de 4, 8 e 12 semanas
+- Evolução de carga por exercício
+- Recordes pessoais por sessão e por exercício
+- Gerenciamento de perfil e logout
 
----
+
 
 ## Tecnologias
 
 ### Frontend
+
 - React
 - TypeScript
 - Vite
@@ -40,16 +44,26 @@ O projeto possui um **frontend em React + TypeScript**, um **backend em Spring B
 - React Router
 
 ### Backend
+
+- Java
 - Spring Boot
 - Spring Security
 - Spring Data JPA
 - JWT
-- PostgreSQL
 - Maven
 
----
+### Banco de dados e infraestrutura
 
-## Como executar
+- PostgreSQL
+- Docker Compose
+
+### Deploy
+
+- Vercel
+
+
+
+## Como executar localmente
 
 ### 1. Clonar o repositório
 
@@ -59,6 +73,8 @@ cd GoJym
 ```
 
 ### 2. Iniciar o banco de dados
+
+Na raiz do projeto:
 
 ```bash
 docker compose up -d
@@ -77,6 +93,12 @@ No Windows:
 mvnw spring-boot:run
 ```
 
+O backend ficará disponível em:
+
+```text
+http://localhost:8080
+```
+
 ### 4. Executar o frontend
 
 Abra outro terminal:
@@ -87,16 +109,28 @@ npm install
 npm run dev
 ```
 
-Frontend:
+O frontend ficará disponível em:
 
 ```text
 http://localhost:5173
 ```
 
-Backend:
 
-```text
-http://localhost:8080
+
+## Build
+
+### Frontend
+
+```bash
+cd frontend
+npm run build
+```
+
+### Backend
+
+```bash
+cd backend
+./mvnw clean package
 ```
 
 ---
@@ -111,6 +145,32 @@ GoJym/
 ├── docker-compose.yml
 └── README.md
 ```
+
+### `frontend/`
+
+Aplicação web mobile-first desenvolvida com React, TypeScript, Vite e Tailwind CSS.
+
+### `backend/`
+
+API REST desenvolvida com Spring Boot, responsável pelas regras de negócio, autenticação, persistência e integração com o banco de dados.
+
+### `docs/`
+
+Documentação do projeto, incluindo a documentação final da entrega.
+
+---
+
+## Estado do projeto
+
+O GoJym está em sua versão final, com:
+
+- frontend funcional
+- backend implementado
+- autenticação com JWT
+- persistência em PostgreSQL
+- integração entre frontend e backend
+- modo mock preservado para desenvolvimento e demonstração
+- análise de desempenho e recordes pessoais integrados
 
 ---
 
