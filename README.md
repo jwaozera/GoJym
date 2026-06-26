@@ -12,7 +12,7 @@ O projeto possui um **frontend em React + TypeScript**, um **backend em Spring B
 
 - **Deploy:** https://go-jym.vercel.app
 - **Protótipo (Figma):** https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
-- **Documentação AB1:** `docs/GoJym_Documentacao_AB1.pdf`
+- **Documentação final:** [docs/GoJym_Documentacao_Final.pdf](docs/GoJym_Documentacao_Final.pdf)
 
 ---
 
