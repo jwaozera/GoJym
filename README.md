@@ -6,7 +6,6 @@ A plataforma permite criar treinos personalizados, executar sessões, registrar 
 
 O projeto possui um **frontend em React + TypeScript**, um **backend em Spring Boot** e utiliza **PostgreSQL** para persistência dos dados, com comunicação através de uma API REST.
 
----
 
 ## Links
 
@@ -14,7 +13,6 @@ O projeto possui um **frontend em React + TypeScript**, um **backend em Spring B
 - **Protótipo (Figma):** https://www.figma.com/design/7mStvl2prXsiOmN24Ufw8Z/Wireframe-App-Academia---GoJym?m=auto&t=kPvUnQwN2BfPJYne-6
 - **Documentação final:** [docs/GoJym_Documentacao_Final.pdf](docs/GoJym_Documentacao_Final.pdf)
 
----
 
 ## Funcionalidades
 
@@ -27,7 +25,6 @@ O projeto possui um **frontend em React + TypeScript**, um **backend em Spring B
 - Recordes pessoais de desempenho
 - Gerenciamento do perfil do usuário
 
----
 
 ## Tecnologias
 
@@ -47,7 +44,6 @@ O projeto possui um **frontend em React + TypeScript**, um **backend em Spring B
 - PostgreSQL
 - Maven
 
----
 
 ## Como executar
 
@@ -99,7 +95,6 @@ Backend:
 http://localhost:8080
 ```
 
----
 
 ## Estrutura do projeto
 
@@ -112,7 +107,6 @@ GoJym/
 └── README.md
 ```
 
----
 
 ## Equipe
 
